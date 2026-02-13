@@ -74,3 +74,32 @@ export interface ActivityLog {
   // Joined field
   agent?: Agent;
 }
+
+export type SourceType = 'tweet' | 'article' | 'blog' | 'video';
+
+export interface ResearchSource {
+  id: string;
+  source_type: SourceType;
+  source_url: string | null;
+  author: string | null;
+  title: string | null;
+  summary: string | null;
+  discovered_at: string;
+  tags: string[];
+}
+
+export type UpgradeStatus = 'planned' | 'in_progress' | 'deployed' | 'rejected';
+
+export interface Upgrade {
+  id: string;
+  title: string;
+  description: string | null;
+  source_id: string | null;
+  status: UpgradeStatus;
+  priority: 'low' | 'medium' | 'high';
+  created_at: string;
+  deployed_at: string | null;
+  notes: string | null;
+  // Joined field
+  source?: ResearchSource;
+}
