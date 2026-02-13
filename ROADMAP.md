@@ -10,6 +10,12 @@ Your personal command center is live! Here's what could make it even more powerf
 - ✅ Memory page (placeholder)
 - ✅ Chat page (placeholder)
 - ✅ Mobile responsive design
+- ✅ **NEW** Quick Actions (New Task, Start Call) - fully functional
+- ✅ **NEW** Real-time agent refresh (10 second intervals)
+- ✅ **NEW** Activity feed with category filters
+- ✅ **NEW** System status bar (connection, health, sync)
+- ✅ **NEW** Keyboard shortcuts (n, g+a/l/t/p/c/h/s)
+- ✅ **NEW** Settings page (password, theme, shortcuts)
 
 ## 🚀 High Priority - Next Up
 
@@ -27,11 +33,11 @@ Your personal command center is live! Here's what could make it even more powerf
 - "What's my day look like?" query
 - Auto-suggest best times for calls/meetings
 
-### 3. Quick Actions That Actually Work
-**Why:** The buttons on the dashboard should do something
-- "Make a Call" → Modal to input number + purpose, triggers ElevenLabs call
-- "Add Task" → Quick task creation modal
-- "New Lead" → Lead capture form (if doing sales stuff)
+### ~~3. Quick Actions That Actually Work~~ ✅ DONE
+**Status:** Shipped in v1.1.0
+- ✅ "Make a Call" → Modal triggers ElevenLabs outbound call
+- ✅ "Add Task" → Quick task creation modal
+- "New Lead" → Lead capture form (future)
 
 ## 📈 Medium Priority - Power Features
 
@@ -103,9 +109,9 @@ Your personal command center is live! Here's what could make it even more powerf
 - [ ] Database indexes for common queries
 
 ### UX Polish
-- [ ] Keyboard shortcuts (j/k navigation, etc.)
-- [ ] Command palette (⌘K)
-- [ ] Dark/light theme toggle
+- [x] Keyboard shortcuts (n, g+a/l/t/p/c/h/s) ✅
+- [ ] Command palette (⌘K) - wired, needs implementation
+- [x] Dark/light theme toggle (dark active, light wired) ✅
 - [ ] Customizable dashboard layout
 - [ ] Drag-and-drop everywhere
 
