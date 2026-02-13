@@ -56,20 +56,27 @@ The Bridge (lex-hq) is a Next.js dashboard that displays real-time data from Cla
 **Location:** `~/clawd/scripts/sync-agents.js`
 **Schedule:** Every 15 minutes via cron
 
-Reads Clawdbot session files and updates `mc_agents` table with:
+Reads Clawdbot session files and updates **TWO tables**:
+
+**1. mc_agents table** (team roster):
 - `last_seen_at` - Timestamp of most recent activity
 - `config.session_count` - Total sessions for this agent
 - `config.sessions_today` - Sessions created today
 - `config.current_task` - Most recent user message (task context)
 
+**2. agents table** (dashboard display):
+- `last_active_at` - Timestamp for dashboard
+- `status` - 'active' if seen in last 15 min, else 'idle'
+- `current_task` - Task context for display
+
 **Agent Mapping:**
 ```
-Clawdbot Name → mc_agents.name
-main          → lex
-scout         → scout
-closer        → closer
-voice         → voice
-numbers       → numbers
+Clawdbot Name → mc_agents.name → agents.session_key
+main          → lex            → agent:main:main
+scout         → scout          → agent:scout:main
+closer        → closer         → agent:closer:main
+voice         → voice          → agent:voice:main
+numbers       → numbers        → agent:numbers:main
 ```
 
 ### sync-calls.js
