@@ -2,6 +2,38 @@
 
 All notable changes to The Bridge are documented here.
 
+## [1.2.0] - 2026-02-13
+
+### Added - Agent Upgrades System
+
+#### `/upgrades` Page
+Track self-improvement based on research and learnings.
+
+**Research Feed**
+- Log sources you learn from (tweets, articles, blogs, videos)
+- Author, title, summary, and tags
+- Link to original source
+- Quick "Upgrade" button to create improvement from source
+
+**Upgrade Pipeline**
+- Kanban-style workflow: Planned → In Progress → Deployed
+- Each upgrade linked to research source
+- Priority badges (low/medium/high)
+- Status progression with action buttons
+- Expandable cards with notes and details
+
+**Database Tables**
+- `research_sources`: source_type, source_url, author, title, summary, tags
+- `upgrades`: title, description, source_id, status, priority, deployed_at, notes
+
+**Example Data Seeded**
+- Alex Finn tweet about self-improving AI agents
+- Simon Willison article on prompt engineering
+- Lilian Weng blog on LLM agents
+- 4 sample upgrades in various states
+
+---
+
 ## [1.1.0] - 2026-02-13
 
 ### Added - Major Feature Update
