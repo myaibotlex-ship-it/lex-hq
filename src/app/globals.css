@@ -119,10 +119,366 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
-    @apply bg-background text-foreground;
+  }
+}
+
+/* ========================
+   Mission Control Animations
+   ======================== */
+
+/* Glowing pulse for active status */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 4px currentColor, 0 0 8px currentColor;
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 8px currentColor, 0 0 16px currentColor, 0 0 24px currentColor;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* Fade-in animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out forwards;
+}
+
+/* Subtle scan line effect */
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+/* Number ticker animation */
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Skeleton loading shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ========================
+   Utility Classes
+   ======================== */
+
+/* Status indicator styles */
+.status-dot {
+  @apply w-2.5 h-2.5 rounded-full relative;
+}
+
+.status-dot-active {
+  @apply bg-emerald-500;
+  animation: pulse-glow 2s ease-in-out infinite;
+  color: rgb(16, 185, 129);
+}
+
+.status-dot-active::after {
+  content: '';
+  @apply absolute inset-0 rounded-full bg-emerald-500;
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+.status-dot-idle {
+  @apply bg-amber-500;
+}
+
+.status-dot-complete {
+  @apply bg-zinc-500;
+}
+
+.status-dot-error {
+  @apply bg-red-500;
+  animation: pulse-glow 1s ease-in-out infinite;
+  color: rgb(239, 68, 68);
+}
+
+/* Fade-in utilities */
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
+.animate-fade-in-scale {
+  animation: fade-in-scale 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.4s ease-out forwards;
+}
+
+/* Staggered animations */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+
+/* Hero stat card glow */
+.hero-stat {
+  @apply relative overflow-hidden;
+}
+
+.hero-stat::before {
+  content: '';
+  @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+  background: radial-gradient(circle at 50% 0%, rgba(245, 158, 11, 0.1), transparent 70%);
+}
+
+.hero-stat:hover::before {
+  @apply opacity-100;
+}
+
+/* Terminal/monospace text */
+.font-terminal {
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-feature-settings: 'liga' 1, 'calt' 1;
+}
+
+/* Log entry hover effect */
+.log-entry {
+  @apply transition-all duration-200;
+}
+
+.log-entry:hover {
+  @apply bg-zinc-800/60;
+  transform: translateX(2px);
+}
+
+/* Card glow effect on hover */
+.card-glow {
+  @apply transition-all duration-300;
+}
+
+.card-glow:hover {
+  @apply border-zinc-700;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.1), 
+              0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Skeleton loading */
+.skeleton {
+  @apply bg-zinc-800 rounded;
+  background: linear-gradient(
+    90deg,
+    rgb(39, 39, 42) 0%,
+    rgb(63, 63, 70) 50%,
+    rgb(39, 39, 42) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Systems status bar */
+.systems-bar {
+  @apply relative overflow-hidden;
+}
+
+.systems-bar::after {
+  content: '';
+  @apply absolute top-0 left-0 right-0 h-px;
+  background: linear-gradient(90deg, transparent, rgba(245, 158, 11, 0.3), transparent);
+}
+
+/* Subtle scan line overlay (optional - can be applied to sections) */
+.scanline-overlay {
+  @apply pointer-events-none fixed inset-0 z-50;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
+
+/* Terminal green accent text */
+.text-terminal {
+  color: rgb(74, 222, 128);
+  text-shadow: 0 0 8px rgba(74, 222, 128, 0.3);
+}
+
+/* Progress bar glow */
+.progress-glow {
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+/* Activity stream scrollbar */
+.activity-stream::-webkit-scrollbar {
+  @apply w-1.5;
+}
+
+.activity-stream::-webkit-scrollbar-track {
+  @apply bg-zinc-900 rounded;
+}
+
+.activity-stream::-webkit-scrollbar-thumb {
+  @apply bg-zinc-700 rounded;
+}
+
+.activity-stream::-webkit-scrollbar-thumb:hover {
+  @apply bg-zinc-600;
+}
+
+/* Smooth transitions for interactive elements */
+.interactive {
+  @apply transition-all duration-200 ease-out;
+}
+
+.interactive:hover {
+  @apply transform scale-[1.02];
+}
+
+/* Badge glow variants */
+.badge-active {
+  @apply bg-emerald-500/20 text-emerald-400 border-emerald-500/30;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+}
+
+.badge-warning {
+  @apply bg-amber-500/20 text-amber-400 border-amber-500/30;
+}
+
+.badge-error {
+  @apply bg-red-500/20 text-red-400 border-red-500/30;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+}
+
+/* Empty state styling */
+.empty-state {
+  @apply py-12 text-center;
+}
+
+.empty-state-icon {
+  @apply w-16 h-16 mx-auto mb-4 text-zinc-600;
+}
+
+.empty-state-text {
+  @apply text-zinc-500 text-sm;
+}
+
+/* Action button glow */
+.btn-primary-glow {
+  @apply bg-amber-600 hover:bg-amber-500;
+  transition: all 0.2s ease;
+}
+
+.btn-primary-glow:hover {
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);
+}
+
+/* Data density - tighter spacing */
+.compact-card {
+  @apply p-3;
+}
+
+.compact-card-header {
+  @apply pb-2;
+}
+
+/* Grid layouts for data density */
+.stats-grid {
+  @apply grid gap-3;
+}
+
+@media (min-width: 640px) {
+  .stats-grid {
+    @apply grid-cols-2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .stats-grid {
+    @apply grid-cols-4;
   }
 }

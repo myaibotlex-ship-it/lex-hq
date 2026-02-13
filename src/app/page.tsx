@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { supabase, Agent, ActivityLog, Task, Project } from "@/lib/supabase";
+import { supabase, Agent, ActivityLog, Task, Project, Call } from "@/lib/supabase";
+import { NewTaskModal } from "@/components/modals/new-task-modal";
+import { StartCallModal } from "@/components/modals/start-call-modal";
+import { SystemStatus } from "@/components/system-status";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import {
   Calendar,
   CheckCircle2,
@@ -20,7 +24,8 @@ import {
   MessageSquare,
   FileText,
   Globe,
-  Loader2,
+  Mail,
+  Filter,
 } from "lucide-react";
 
 const categoryIcons: Record<string, React.ReactNode> = {
@@ -33,7 +38,16 @@ const categoryIcons: Record<string, React.ReactNode> = {
   system: <Zap className="w-4 h-4 text-zinc-500" />,
 };
 
-function timeAgo(date: string): string {
+const categoryFilters = ["all", "exec", "file", "message", "browser", "tool", "api", "system"];
+
+function useRelativeTime(date: string): string {
+  const [, setTick] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 10000);
+    return () => clearInterval(interval);
+  }, []);
+  
   const now = new Date();
   const then = new Date(date);
   const diff = Math.floor((now.getTime() - then.getTime()) / 1000);
@@ -44,11 +58,36 @@ function timeAgo(date: string): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
+function TimeAgo({ date }: { date: string }) {
+  const relative = useRelativeTime(date);
+  return <span>{relative}</span>;
+}
+
 function getGreeting(): string {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="p-4 md:p-6 space-y-6">
+      <div className="mb-6">
+        <div className="skeleton h-8 w-48 mb-2" />
+        <div className="skeleton h-4 w-64" />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="skeleton h-24 rounded-lg" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 skeleton h-64 rounded-lg" />
+        <div className="skeleton h-64 rounded-lg" />
+      </div>
+    </div>
+  );
 }
 
 export default function MissionControl() {
@@ -57,242 +96,370 @@ export default function MissionControl() {
   const [recentLogs, setRecentLogs] = useState<(ActivityLog & { agent?: Agent })[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [calls, setCalls] = useState<Call[]>([]);
+  const [activityFilter, setActivityFilter] = useState("all");
+  const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [showCallModal, setShowCallModal] = useState(false);
+  const [todayActivityCount, setTodayActivityCount] = useState(0);
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000); // Refresh every 30s
-    return () => clearInterval(interval);
-  }, []);
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onNewTask: () => setShowNewTaskModal(true),
+    onSearch: () => {
+      // TODO: Implement search modal
+      console.log("Search triggered");
+    },
+  });
 
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     try {
-      const [agentsRes, logsRes, tasksRes, projectsRes] = await Promise.all([
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const [agentsRes, logsRes, tasksRes, projectsRes, callsRes, todayLogsRes] = await Promise.all([
         supabase.from('agents').select('*').order('last_active_at', { ascending: false }),
-        supabase.from('activity_logs').select('*, agent:agents(*)').order('timestamp', { ascending: false }).limit(10),
+        supabase.from('activity_logs').select('*, agent:agents(*)').order('timestamp', { ascending: false }).limit(20),
         supabase.from('tasks').select('*').eq('archived', false),
         supabase.from('projects').select('*').eq('status', 'active'),
+        supabase.from('calls').select('*').order('created_at', { ascending: false }).limit(10),
+        supabase.from('activity_logs').select('id', { count: 'exact' }).gte('timestamp', today.toISOString()),
       ]);
 
       setAgents(agentsRes.data || []);
       setRecentLogs(logsRes.data || []);
       setTasks(tasksRes.data || []);
       setProjects(projectsRes.data || []);
+      setCalls(callsRes.data || []);
+      setTodayActivityCount(todayLogsRes.count || 0);
     } catch (err) {
       console.error('Failed to fetch data:', err);
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+    // Refresh agents every 10 seconds
+    const agentInterval = setInterval(async () => {
+      const { data } = await supabase.from('agents').select('*').order('last_active_at', { ascending: false });
+      if (data) setAgents(data);
+    }, 10000);
+    
+    // Refresh other data every 30 seconds
+    const dataInterval = setInterval(fetchData, 30000);
+    
+    return () => {
+      clearInterval(agentInterval);
+      clearInterval(dataInterval);
+    };
+  }, [fetchData]);
 
   const activeAgents = agents.filter(a => a.status === 'active').length;
   const todoTasks = tasks.filter(t => t.column_id === 'todo').length;
   const highPriorityTasks = tasks.filter(t => t.priority === 'high' && t.column_id !== 'done');
+  const completedTasks = tasks.filter(t => t.column_id === 'done').length;
+  const successRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+
+  const filteredLogs = activityFilter === "all" 
+    ? recentLogs 
+    : recentLogs.filter(log => log.action_category === activityFilter);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[50vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-      </div>
-    );
+    return <LoadingSkeleton />;
   }
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2">{getGreeting()}, Dan</h1>
-        <p className="text-zinc-400">Here's what's happening across your agents</p>
+      <div className="mb-6 animate-fade-in">
+        <h1 className="text-2xl md:text-3xl font-bold mb-1">{getGreeting()}, Dan</h1>
+        <p className="text-zinc-500 text-sm">Here's what's happening across your agents</p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <Card className="bg-zinc-900 border-zinc-800">
+      {/* Hero Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-1 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-zinc-400 text-sm">Active Agents</p>
-                <p className="text-2xl font-bold text-green-400">{activeAgents}</p>
+                <p className="text-zinc-500 text-xs uppercase tracking-wider font-medium">Active Agents</p>
+                <p className="text-3xl font-bold text-emerald-400 mt-1">{activeAgents}</p>
+                <p className="text-xs text-zinc-600 mt-1">{agents.length} total</p>
               </div>
-              <Bot className="w-8 h-8 text-green-500" />
+              <div className="relative">
+                <Bot className="w-10 h-10 text-emerald-500/30" />
+                {activeAgents > 0 && (
+                  <span className="absolute -top-1 -right-1 status-dot status-dot-active" />
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+
+        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-2 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-zinc-400 text-sm">Tasks Due</p>
-                <p className="text-2xl font-bold">{todoTasks}</p>
+                <p className="text-zinc-500 text-xs uppercase tracking-wider font-medium">Tasks Due</p>
+                <p className="text-3xl font-bold mt-1">{todoTasks}</p>
+                <p className="text-xs text-zinc-600 mt-1">{successRate}% complete</p>
               </div>
-              <CheckCircle2 className="w-8 h-8 text-amber-500" />
+              <CheckCircle2 className="w-10 h-10 text-amber-500/30" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+
+        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-3 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-zinc-400 text-sm">Active Projects</p>
-                <p className="text-2xl font-bold">{projects.length}</p>
+                <p className="text-zinc-500 text-xs uppercase tracking-wider font-medium">Calls Today</p>
+                <p className="text-3xl font-bold mt-1">{calls.filter(c => {
+                  const today = new Date();
+                  const callDate = new Date(c.created_at);
+                  return callDate.toDateString() === today.toDateString();
+                }).length}</p>
+                <p className="text-xs text-zinc-600 mt-1">{calls.length} total</p>
               </div>
-              <TrendingUp className="w-8 h-8 text-purple-500" />
+              <Phone className="w-10 h-10 text-amber-500/30" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+
+        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-4 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-zinc-400 text-sm">Actions Today</p>
-                <p className="text-2xl font-bold">{recentLogs.length}</p>
+                <p className="text-zinc-500 text-xs uppercase tracking-wider font-medium">Actions Today</p>
+                <p className="text-3xl font-bold mt-1">{todayActivityCount}</p>
+                <p className="text-xs text-zinc-600 mt-1">{projects.length} active projects</p>
               </div>
-              <Activity className="w-8 h-8 text-blue-500" />
+              <Activity className="w-10 h-10 text-blue-500/30" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Active Agents */}
-        <Card className="bg-zinc-900 border-zinc-800 lg:col-span-2">
-          <CardHeader className="pb-3">
+        <Card className="bg-zinc-900/80 border-zinc-800 lg:col-span-2 card-glow animate-slide-up stagger-2 opacity-0">
+          <CardHeader className="pb-2 px-4 pt-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Bot className="w-5 h-5 text-green-500" />
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase tracking-wider text-zinc-400">
+                <Bot className="w-4 h-4 text-emerald-500" />
                 Active Agents
+                <span className="ml-1 px-1.5 py-0.5 bg-zinc-800 rounded text-xs font-normal">
+                  auto-refresh 10s
+                </span>
               </CardTitle>
               <Link href="/agents">
-                <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white">
-                  View All <ArrowRight className="w-4 h-4 ml-1" />
+                <Button variant="ghost" size="sm" className="text-zinc-500 hover:text-white h-7 text-xs">
+                  View All <ArrowRight className="w-3 h-3 ml-1" />
                 </Button>
               </Link>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {agents.slice(0, 4).map((agent) => (
-              <div key={agent.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${agent.status === 'active' ? 'bg-green-500 animate-pulse' : 'bg-zinc-500'}`} />
-                  <div>
-                    <span className="font-medium">{agent.label}</span>
+          <CardContent className="px-4 pb-4 space-y-2">
+            {agents.slice(0, 4).map((agent, index) => (
+              <div 
+                key={agent.id} 
+                className="flex items-center justify-between p-3 bg-zinc-800/40 rounded-lg border border-zinc-800/50 hover:border-zinc-700 transition-all duration-200 hover:bg-zinc-800/60 group"
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className={`status-dot flex-shrink-0 ${
+                    agent.status === 'active' ? 'status-dot-active' : 
+                    agent.status === 'idle' ? 'status-dot-idle' : 'status-dot-complete'
+                  }`} />
+                  <div className="min-w-0">
+                    <span className="font-medium text-sm">{agent.label}</span>
                     {agent.current_task && (
-                      <p className="text-xs text-zinc-500 truncate max-w-[200px]">{agent.current_task}</p>
+                      <p className="text-xs text-zinc-500 truncate max-w-[200px] font-terminal">{agent.current_task}</p>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className={
-                    agent.status === 'active' ? "text-green-400 border-green-400/30" :
-                    agent.status === 'idle' ? "text-zinc-400 border-zinc-400/30" :
-                    "text-blue-400 border-blue-400/30"
-                  }>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Badge variant="outline" className={`text-xs ${
+                    agent.status === 'active' ? "badge-active" :
+                    agent.status === 'idle' ? "badge-warning" :
+                    "text-zinc-400 border-zinc-600"
+                  }`}>
                     {agent.status}
                   </Badge>
-                  <span className="text-xs text-zinc-500">{timeAgo(agent.last_active_at)}</span>
+                  <span className="text-xs text-zinc-600 hidden sm:inline">
+                    <TimeAgo date={agent.last_active_at} />
+                  </span>
                 </div>
               </div>
             ))}
             {agents.length === 0 && (
-              <p className="text-center text-zinc-500 py-4">No agents found</p>
+              <div className="empty-state">
+                <Bot className="empty-state-icon" />
+                <p className="empty-state-text">No agents found</p>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* Quick Actions */}
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
+        <Card className="bg-zinc-900/80 border-zinc-800 card-glow animate-slide-in-right stagger-3 opacity-0">
+          <CardHeader className="pb-2 px-4 pt-4">
+            <CardTitle className="text-sm font-semibold uppercase tracking-wider text-zinc-400">Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Button variant="outline" className="w-full justify-start gap-2 bg-zinc-800 border-zinc-700 hover:bg-zinc-700">
-              <Phone className="w-4 h-4" />
-              Make a Call
+          <CardContent className="px-4 pb-4 space-y-2">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start gap-2 bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 h-10 text-sm interactive"
+              onClick={() => setShowCallModal(true)}
+            >
+              <Phone className="w-4 h-4 text-amber-500" />
+              Start Call
+              <kbd className="ml-auto px-1.5 py-0.5 bg-zinc-700/50 rounded text-xs text-zinc-500">soon</kbd>
             </Button>
-            <Button variant="outline" className="w-full justify-start gap-2 bg-zinc-800 border-zinc-700 hover:bg-zinc-700">
-              <CheckCircle2 className="w-4 h-4" />
-              Add Task
+            <Button 
+              variant="outline" 
+              className="w-full justify-start gap-2 bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 h-10 text-sm interactive"
+              onClick={() => setShowNewTaskModal(true)}
+            >
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              New Task
+              <kbd className="ml-auto px-1.5 py-0.5 bg-zinc-700/50 rounded text-xs text-zinc-500">n</kbd>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start gap-2 bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 h-10 text-sm interactive opacity-60"
+              disabled
+            >
+              <Mail className="w-4 h-4 text-blue-500" />
+              Check Email
+              <span className="ml-auto text-xs text-zinc-600">coming soon</span>
             </Button>
             <Link href="/agents" className="block">
-              <Button variant="outline" className="w-full justify-start gap-2 bg-zinc-800 border-zinc-700 hover:bg-zinc-700">
-                <Bot className="w-4 h-4" />
+              <Button variant="outline" className="w-full justify-start gap-2 bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 h-10 text-sm interactive">
+                <Bot className="w-4 h-4 text-purple-500" />
                 View Agents
-              </Button>
-            </Link>
-            <Link href="/logs" className="block">
-              <Button variant="outline" className="w-full justify-start gap-2 bg-zinc-800 border-zinc-700 hover:bg-zinc-700">
-                <Activity className="w-4 h-4" />
-                Activity Logs
+                <kbd className="ml-auto px-1.5 py-0.5 bg-zinc-700/50 rounded text-xs text-zinc-500">g a</kbd>
               </Button>
             </Link>
           </CardContent>
         </Card>
 
         {/* High Priority Tasks */}
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardHeader className="pb-3">
+        <Card className="bg-zinc-900/80 border-zinc-800 card-glow animate-slide-up stagger-4 opacity-0">
+          <CardHeader className="pb-2 px-4 pt-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Zap className="w-5 h-5 text-amber-500" />
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase tracking-wider text-zinc-400">
+                <Zap className="w-4 h-4 text-red-500" />
                 High Priority
               </CardTitle>
               <Link href="/tasks">
-                <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white">
-                  <ArrowRight className="w-4 h-4" />
+                <Button variant="ghost" size="sm" className="text-zinc-500 hover:text-white h-6 w-6 p-0">
+                  <ArrowRight className="w-3 h-3" />
                 </Button>
               </Link>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="px-4 pb-4 space-y-2">
             {highPriorityTasks.slice(0, 4).map((task) => (
-              <div key={task.id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-red-500" />
-                  <span className="text-sm truncate max-w-[180px]">{task.title}</span>
+              <div key={task.id} className="flex items-center justify-between p-2.5 bg-zinc-800/40 rounded-lg border border-zinc-800/50 hover:border-red-500/20 transition-all">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="status-dot status-dot-error flex-shrink-0" />
+                  <span className="text-sm truncate">{task.title}</span>
                 </div>
-                <Badge variant="outline" className="text-red-400 border-red-400/30 text-xs">
+                <Badge variant="outline" className="badge-error text-xs flex-shrink-0">
                   {task.priority}
                 </Badge>
               </div>
             ))}
             {highPriorityTasks.length === 0 && (
-              <p className="text-center text-zinc-500 py-4">No high priority tasks</p>
+              <div className="empty-state py-6">
+                <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-zinc-700" />
+                <p className="empty-state-text text-xs">No high priority tasks</p>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* Recent Activity */}
-        <Card className="bg-zinc-900 border-zinc-800 lg:col-span-2">
-          <CardHeader className="pb-3">
+        <Card className="bg-zinc-900/80 border-zinc-800 lg:col-span-2 card-glow animate-slide-up stagger-5 opacity-0">
+          <CardHeader className="pb-2 px-4 pt-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Recent Activity</CardTitle>
-              <Link href="/logs">
-                <Button variant="ghost" size="sm" className="text-zinc-400 hover:text-white">
-                  View All <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
-              </Link>
+              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-zinc-400">Recent Activity</CardTitle>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-zinc-800/50 rounded-lg p-0.5">
+                  {categoryFilters.slice(0, 5).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setActivityFilter(filter)}
+                      className={`px-2 py-1 rounded text-xs transition-colors ${
+                        activityFilter === filter
+                          ? "bg-zinc-700 text-white"
+                          : "text-zinc-500 hover:text-zinc-300"
+                      }`}
+                    >
+                      {filter === "all" ? "All" : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <Link href="/logs">
+                  <Button variant="ghost" size="sm" className="text-zinc-500 hover:text-white h-7 text-xs">
+                    View All <ArrowRight className="w-3 h-3 ml-1" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {recentLogs.slice(0, 5).map((log) => (
-              <div key={log.id} className="flex items-center gap-4 text-sm">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  log.success ? 'bg-green-500/20' : 'bg-red-500/20'
-                }`}>
-                  {categoryIcons[log.action_category] || <Activity className="w-4 h-4 text-zinc-500" />}
+          <CardContent className="px-4 pb-4 activity-stream max-h-72 overflow-y-auto">
+            <div className="space-y-1">
+              {filteredLogs.slice(0, 8).map((log) => (
+                <div key={log.id} className="flex items-center gap-3 p-2 rounded-lg log-entry group">
+                  <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${
+                    log.success ? 'bg-emerald-500/10' : 'bg-red-500/10'
+                  }`}>
+                    {categoryIcons[log.action_category] || <Activity className="w-3.5 h-3.5 text-zinc-500" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate font-terminal">{log.action_type}</p>
+                    <p className="text-zinc-600 text-xs">{log.agent?.label || 'System'}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`w-1.5 h-1.5 rounded-full ${log.success ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                    <span className="text-zinc-600 text-xs">
+                      <TimeAgo date={log.timestamp} />
+                    </span>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="truncate">{log.action_type}</p>
-                  <p className="text-zinc-500 text-xs">{log.agent?.label || 'Unknown Agent'}</p>
-                </div>
-                <span className="text-zinc-500 text-xs whitespace-nowrap">{timeAgo(log.timestamp)}</span>
+              ))}
+            </div>
+            {filteredLogs.length === 0 && (
+              <div className="empty-state py-6">
+                <Activity className="w-10 h-10 mx-auto mb-2 text-zinc-700" />
+                <p className="empty-state-text text-xs">
+                  {activityFilter === "all" ? "No recent activity" : `No ${activityFilter} activity`}
+                </p>
               </div>
-            ))}
-            {recentLogs.length === 0 && (
-              <p className="text-center text-zinc-500 py-4">No recent activity</p>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* System Status Bar */}
+      <div className="mt-6 pt-4 border-t border-zinc-800">
+        <SystemStatus />
+      </div>
+
+      {/* Modals */}
+      <NewTaskModal
+        isOpen={showNewTaskModal}
+        onClose={() => setShowNewTaskModal(false)}
+        onSuccess={fetchData}
+      />
+      <StartCallModal
+        isOpen={showCallModal}
+        onClose={() => setShowCallModal(false)}
+        onSuccess={fetchData}
+      />
     </div>
   );
 }

@@ -11,7 +11,6 @@ import {
   Filter,
   Download,
   RefreshCw,
-  Loader2,
   AlertCircle,
   Terminal,
   FileText,
@@ -24,12 +23,14 @@ import {
   ChevronUp,
   X,
   Calendar,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 
 const categoryColors: Record<ActionCategory, string> = {
   tool: "bg-purple-500/20 text-purple-400",
   message: "bg-blue-500/20 text-blue-400",
-  file: "bg-green-500/20 text-green-400",
+  file: "bg-emerald-500/20 text-emerald-400",
   exec: "bg-amber-500/20 text-amber-400",
   browser: "bg-pink-500/20 text-pink-400",
   api: "bg-cyan-500/20 text-cyan-400",
@@ -46,7 +47,14 @@ const categoryIcons: Record<ActionCategory, React.ReactNode> = {
   system: <Settings className="w-4 h-4" />,
 };
 
-function timeAgo(date: string): string {
+function useRelativeTime(date: string): string {
+  const [, setTick] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 10000);
+    return () => clearInterval(interval);
+  }, []);
+  
   const now = new Date();
   const then = new Date(date);
   const diff = Math.floor((now.getTime() - then.getTime()) / 1000);
@@ -57,13 +65,41 @@ function timeAgo(date: string): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
+function TimeAgo({ date }: { date: string }) {
+  const relative = useRelativeTime(date);
+  return <span>{relative}</span>;
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="p-4 md:p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <div className="skeleton h-8 w-40 mb-2" />
+          <div className="skeleton h-4 w-56" />
+        </div>
+        <div className="flex gap-2">
+          <div className="skeleton h-9 w-24 rounded-lg" />
+          <div className="skeleton h-9 w-16 rounded-lg" />
+        </div>
+      </div>
+      <div className="skeleton h-14 rounded-lg" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="skeleton h-16 rounded-lg" />
+        ))}
+      </div>
+      <div className="skeleton h-96 rounded-lg" />
+    </div>
+  );
+}
+
 export default function LogsPage() {
   const [logs, setLogs] = useState<(ActivityLog & { agent?: Agent })[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAgent, setSelectedAgent] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -71,7 +107,6 @@ export default function LogsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
 
-  // Pagination
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const pageSize = 50;
@@ -91,7 +126,6 @@ export default function LogsPage() {
         .order('timestamp', { ascending: false })
         .range(reset ? 0 : page * pageSize, (reset ? 0 : page) * pageSize + pageSize - 1);
 
-      // Apply filters
       if (selectedAgent !== "all") {
         query = query.eq('agent_id', selectedAgent);
       }
@@ -196,7 +230,6 @@ export default function LogsPage() {
     URL.revokeObjectURL(url);
   }
 
-  // Filter logs by search query
   const filteredLogs = logs.filter(log => {
     if (!searchQuery) return true;
     const search = searchQuery.toLowerCase();
@@ -209,61 +242,65 @@ export default function LogsPage() {
   });
 
   const categories: ActionCategory[] = ['tool', 'message', 'file', 'exec', 'browser', 'api', 'system'];
+  const successCount = filteredLogs.filter(l => l.success).length;
+  const successRate = filteredLogs.length > 0 ? Math.round((successCount / filteredLogs.length) * 100) : 0;
+
+  if (loading && logs.length === 0) {
+    return <LoadingSkeleton />;
+  }
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Activity Logs</h1>
-          <p className="text-zinc-400">Full audit trail of all agent actions</p>
+          <h1 className="text-2xl md:text-3xl font-bold mb-1">Activity Logs</h1>
+          <p className="text-zinc-500 text-sm">Full audit trail of all agent actions</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => fetchLogs(true)} variant="outline" className="bg-zinc-800 border-zinc-700">
+          <Button onClick={() => fetchLogs(true)} variant="outline" className="bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 h-9 text-sm">
             <RefreshCw className="w-4 h-4 md:mr-2" />
             <span className="hidden md:inline">Refresh</span>
           </Button>
-          <Button onClick={() => exportLogs('csv')} variant="outline" className="bg-zinc-800 border-zinc-700">
-            <Download className="w-4 h-4 md:mr-2" />
+          <Button onClick={() => exportLogs('csv')} variant="outline" className="bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 h-9 text-sm">
+            <Download className="w-4 h-4 md:mr-1" />
             <span className="hidden md:inline">CSV</span>
           </Button>
-          <Button onClick={() => exportLogs('json')} variant="outline" className="bg-zinc-800 border-zinc-700">
-            <Download className="w-4 h-4 md:mr-2" />
+          <Button onClick={() => exportLogs('json')} variant="outline" className="bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 h-9 text-sm">
+            <Download className="w-4 h-4 md:mr-1" />
             <span className="hidden md:inline">JSON</span>
           </Button>
         </div>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2 text-red-400">
-          <AlertCircle className="w-5 h-5" />
-          {error}
-          <Button variant="ghost" size="sm" onClick={() => setError(null)} className="ml-auto">
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2 text-red-400 text-sm animate-fade-in">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{error}</span>
+          <Button variant="ghost" size="sm" onClick={() => setError(null)} className="h-7 text-xs">
             Dismiss
           </Button>
         </div>
       )}
 
       {/* Search and Filters */}
-      <Card className="bg-zinc-900 border-zinc-800 mb-6">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
+      <Card className="bg-zinc-900/80 border-zinc-800 mb-4 animate-fade-in stagger-1 opacity-0">
+        <CardContent className="p-3">
+          <div className="flex flex-col md:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
               <Input
                 placeholder="Search logs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-zinc-800 border-zinc-700"
+                className="pl-9 bg-zinc-800/50 border-zinc-700 h-9 text-sm font-terminal"
               />
             </div>
             
-            {/* Filter Toggle */}
             <Button 
               variant="outline" 
               onClick={() => setShowFilters(!showFilters)}
-              className="bg-zinc-800 border-zinc-700"
+              className="bg-zinc-800/50 border-zinc-700 h-9 text-sm"
             >
               <Filter className="w-4 h-4 mr-2" />
               Filters
@@ -271,16 +308,14 @@ export default function LogsPage() {
             </Button>
           </div>
 
-          {/* Expanded Filters */}
           {showFilters && (
-            <div className="mt-4 pt-4 border-t border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Agent Filter */}
+            <div className="mt-3 pt-3 border-t border-zinc-800/50 grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <label className="text-xs text-zinc-500 mb-2 block">Agent</label>
+                <label className="text-xs text-zinc-600 mb-1.5 block uppercase tracking-wider">Agent</label>
                 <select
                   value={selectedAgent}
                   onChange={(e) => setSelectedAgent(e.target.value)}
-                  className="w-full p-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm"
+                  className="w-full p-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-sm"
                 >
                   <option value="all">All Agents</option>
                   {agents.map(agent => (
@@ -289,13 +324,12 @@ export default function LogsPage() {
                 </select>
               </div>
 
-              {/* Category Filter */}
               <div>
-                <label className="text-xs text-zinc-500 mb-2 block">Category</label>
+                <label className="text-xs text-zinc-600 mb-1.5 block uppercase tracking-wider">Category</label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full p-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm"
+                  className="w-full p-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-sm"
                 >
                   <option value="all">All Categories</option>
                   {categories.map(cat => (
@@ -304,13 +338,12 @@ export default function LogsPage() {
                 </select>
               </div>
 
-              {/* Date Range Filter */}
               <div>
-                <label className="text-xs text-zinc-500 mb-2 block">Date Range</label>
+                <label className="text-xs text-zinc-600 mb-1.5 block uppercase tracking-wider">Date Range</label>
                 <select
                   value={dateRange}
                   onChange={(e) => setDateRange(e.target.value as typeof dateRange)}
-                  className="w-full p-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm"
+                  className="w-full p-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-sm"
                 >
                   <option value="all">All Time</option>
                   <option value="today">Today</option>
@@ -321,29 +354,28 @@ export default function LogsPage() {
             </div>
           )}
 
-          {/* Active Filters */}
           {(selectedAgent !== "all" || selectedCategory !== "all" || dateRange !== "all" || searchQuery) && (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {selectedAgent !== "all" && (
-                <Badge className="bg-zinc-800 text-zinc-300 gap-1">
+                <Badge className="bg-zinc-800 text-zinc-300 gap-1 text-xs">
                   Agent: {agents.find(a => a.id === selectedAgent)?.label}
                   <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedAgent("all")} />
                 </Badge>
               )}
               {selectedCategory !== "all" && (
-                <Badge className="bg-zinc-800 text-zinc-300 gap-1">
+                <Badge className="bg-zinc-800 text-zinc-300 gap-1 text-xs">
                   Category: {selectedCategory}
                   <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedCategory("all")} />
                 </Badge>
               )}
               {dateRange !== "all" && (
-                <Badge className="bg-zinc-800 text-zinc-300 gap-1">
+                <Badge className="bg-zinc-800 text-zinc-300 gap-1 text-xs">
                   Date: {dateRange}
                   <X className="w-3 h-3 cursor-pointer" onClick={() => setDateRange("all")} />
                 </Badge>
               )}
               {searchQuery && (
-                <Badge className="bg-zinc-800 text-zinc-300 gap-1">
+                <Badge className="bg-zinc-800 text-zinc-300 gap-1 text-xs font-terminal">
                   Search: "{searchQuery}"
                   <X className="w-3 h-3 cursor-pointer" onClick={() => setSearchQuery("")} />
                 </Badge>
@@ -354,33 +386,31 @@ export default function LogsPage() {
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-zinc-900 border-zinc-800">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <Card className="bg-zinc-900/80 border-zinc-800 animate-fade-in stagger-2 opacity-0">
           <CardContent className="p-3">
-            <p className="text-zinc-400 text-xs">Total Logs</p>
-            <p className="text-xl font-bold">{filteredLogs.length}</p>
+            <p className="text-zinc-600 text-xs uppercase tracking-wider">Total Logs</p>
+            <p className="text-xl font-bold mt-0.5">{filteredLogs.length}</p>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-zinc-900/80 border-zinc-800 animate-fade-in stagger-3 opacity-0">
           <CardContent className="p-3">
-            <p className="text-zinc-400 text-xs">Success Rate</p>
-            <p className="text-xl font-bold text-green-400">
-              {filteredLogs.length > 0 
-                ? Math.round((filteredLogs.filter(l => l.success).length / filteredLogs.length) * 100)
-                : 0}%
+            <p className="text-zinc-600 text-xs uppercase tracking-wider">Success Rate</p>
+            <p className={`text-xl font-bold mt-0.5 ${successRate >= 90 ? 'text-emerald-400' : successRate >= 70 ? 'text-amber-400' : 'text-red-400'}`}>
+              {successRate}%
             </p>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-zinc-900/80 border-zinc-800 animate-fade-in stagger-4 opacity-0">
           <CardContent className="p-3">
-            <p className="text-zinc-400 text-xs">Unique Agents</p>
-            <p className="text-xl font-bold">{new Set(filteredLogs.map(l => l.agent_id)).size}</p>
+            <p className="text-zinc-600 text-xs uppercase tracking-wider">Unique Agents</p>
+            <p className="text-xl font-bold mt-0.5">{new Set(filteredLogs.map(l => l.agent_id)).size}</p>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-zinc-900/80 border-zinc-800 animate-fade-in stagger-5 opacity-0">
           <CardContent className="p-3">
-            <p className="text-zinc-400 text-xs">Avg Duration</p>
-            <p className="text-xl font-bold">
+            <p className="text-zinc-600 text-xs uppercase tracking-wider">Avg Duration</p>
+            <p className="text-xl font-bold font-terminal mt-0.5">
               {filteredLogs.length > 0 
                 ? Math.round(filteredLogs.reduce((acc, l) => acc + (l.duration_ms || 0), 0) / filteredLogs.filter(l => l.duration_ms).length || 0)
                 : 0}ms
@@ -390,70 +420,78 @@ export default function LogsPage() {
       </div>
 
       {/* Logs List */}
-      <Card className="bg-zinc-900 border-zinc-800">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Activity Stream</CardTitle>
+      <Card className="bg-zinc-900/80 border-zinc-800 animate-slide-up stagger-3 opacity-0">
+        <CardHeader className="pb-2 px-4 pt-4">
+          <CardTitle className="text-sm font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+            <Terminal className="w-4 h-4 text-emerald-500" />
+            Activity Stream
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {loading && logs.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-            </div>
-          ) : filteredLogs.length === 0 ? (
-            <div className="text-center py-12 text-zinc-400">
-              No logs found
+          {filteredLogs.length === 0 ? (
+            <div className="empty-state py-12">
+              <Terminal className="empty-state-icon" />
+              <p className="empty-state-text">No logs found</p>
             </div>
           ) : (
-            <div className="divide-y divide-zinc-800">
-              {filteredLogs.map((log) => (
+            <div className="divide-y divide-zinc-800/50">
+              {filteredLogs.map((log, index) => (
                 <div 
                   key={log.id} 
-                  className="p-4 hover:bg-zinc-800/30 transition-colors cursor-pointer"
+                  className="p-3 hover:bg-zinc-800/30 transition-colors cursor-pointer log-entry"
                   onClick={() => setExpandedLog(expandedLog === log.id ? null : log.id)}
+                  style={{ animationDelay: `${Math.min(index * 0.02, 0.5)}s` }}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${categoryColors[log.action_category]}`}>
+                    <div className={`p-2 rounded-lg flex-shrink-0 ${categoryColors[log.action_category]}`}>
                       {categoryIcons[log.action_category]}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium">{log.action_type}</span>
-                        <Badge className={categoryColors[log.action_category]} variant="outline">
+                        <span className="font-medium text-sm font-terminal">{log.action_type}</span>
+                        <Badge className={`${categoryColors[log.action_category]} text-xs`} variant="outline">
                           {log.action_category}
                         </Badge>
-                        <Badge className={log.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
-                          {log.success ? 'Success' : 'Failed'}
-                        </Badge>
+                        {log.success ? (
+                          <span className="flex items-center gap-1 text-xs text-emerald-400">
+                            <CheckCircle className="w-3 h-3" />
+                            <span className="hidden sm:inline">Success</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-xs text-red-400">
+                            <XCircle className="w-3 h-3" />
+                            <span className="hidden sm:inline">Failed</span>
+                          </span>
+                        )}
                       </div>
-                      <div className="flex items-center gap-4 mt-1 text-xs text-zinc-500">
+                      <div className="flex items-center gap-3 mt-1 text-xs text-zinc-600">
                         <span className="flex items-center gap-1">
                           <Bot className="w-3 h-3" />
                           {log.agent?.label || 'Unknown Agent'}
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {timeAgo(log.timestamp)}
+                          <TimeAgo date={log.timestamp} />
                         </span>
                         {log.duration_ms && (
-                          <span>{log.duration_ms}ms</span>
+                          <span className="font-terminal">{log.duration_ms}ms</span>
                         )}
                       </div>
                       
-                      {/* Expanded Details */}
                       {expandedLog === log.id && (
-                        <div className="mt-3 p-3 bg-zinc-800/50 rounded-lg text-sm">
-                          <p className="text-xs text-zinc-500 mb-2">Details</p>
-                          <pre className="text-xs overflow-x-auto whitespace-pre-wrap text-zinc-300 font-mono">
+                        <div className="mt-3 p-3 bg-zinc-800/50 rounded-lg text-sm border border-zinc-700/50 animate-fade-in-scale">
+                          <p className="text-xs text-zinc-600 mb-2 uppercase tracking-wider">Details</p>
+                          <pre className="text-xs overflow-x-auto whitespace-pre-wrap text-zinc-400 font-terminal bg-zinc-900/50 p-2 rounded">
                             {JSON.stringify(log.details, null, 2)}
                           </pre>
                           {log.result && (
                             <>
-                              <p className="text-xs text-zinc-500 mt-3 mb-2">Result</p>
-                              <p className="text-zinc-300">{log.result}</p>
+                              <p className="text-xs text-zinc-600 mt-3 mb-2 uppercase tracking-wider">Result</p>
+                              <p className="text-zinc-400 text-sm font-terminal">{log.result}</p>
                             </>
                           )}
-                          <p className="text-xs text-zinc-500 mt-3">
-                            Timestamp: {new Date(log.timestamp).toLocaleString()}
+                          <p className="text-xs text-zinc-600 mt-3 font-terminal">
+                            {new Date(log.timestamp).toLocaleString()}
                           </p>
                         </div>
                       )}
@@ -464,18 +502,17 @@ export default function LogsPage() {
             </div>
           )}
           
-          {/* Load More */}
           {hasMore && !loading && filteredLogs.length > 0 && (
-            <div className="p-4 text-center border-t border-zinc-800">
-              <Button onClick={loadMore} variant="outline" className="bg-zinc-800 border-zinc-700">
+            <div className="p-4 text-center border-t border-zinc-800/50">
+              <Button onClick={loadMore} variant="outline" className="bg-zinc-800/50 border-zinc-700 h-9 text-sm">
                 Load More
               </Button>
             </div>
           )}
           
           {loading && logs.length > 0 && (
-            <div className="p-4 text-center border-t border-zinc-800">
-              <Loader2 className="w-5 h-5 animate-spin text-amber-500 mx-auto" />
+            <div className="p-4 text-center border-t border-zinc-800/50">
+              <div className="skeleton h-5 w-5 mx-auto rounded-full" />
             </div>
           )}
         </CardContent>
