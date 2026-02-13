@@ -44,3 +44,33 @@ export interface Call {
   notes: string | null;
   created_at: string;
 }
+
+export interface Agent {
+  id: string;
+  label: string;
+  session_key: string | null;
+  status: 'active' | 'idle' | 'complete' | 'error';
+  current_task: string | null;
+  model: string | null;
+  channel: string | null;
+  parent_agent_id: string | null;
+  created_at: string;
+  last_active_at: string;
+}
+
+export type ActionCategory = 'tool' | 'message' | 'file' | 'exec' | 'browser' | 'api' | 'system';
+
+export interface ActivityLog {
+  id: string;
+  agent_id: string | null;
+  timestamp: string;
+  action_type: string;
+  action_category: ActionCategory;
+  details: Record<string, unknown>;
+  result: string | null;
+  success: boolean;
+  duration_ms: number | null;
+  created_at: string;
+  // Joined field
+  agent?: Agent;
+}

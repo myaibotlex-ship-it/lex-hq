@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Outer ring - command station feel -->
+  <circle cx="50" cy="50" r="45" stroke="url(#gradient1)" stroke-width="2" fill="none"/>
+  
+  <!-- Inner ring - helm wheel inspiration -->
+  <circle cx="50" cy="50" r="32" stroke="url(#gradient2)" stroke-width="1.5" fill="none"/>
+  
+  <!-- Center core -->
+  <circle cx="50" cy="50" r="8" fill="url(#gradient1)"/>
+  
+  <!-- Bridge spokes - command console feel -->
+  <line x1="50" y1="18" x2="50" y2="42" stroke="url(#gradient1)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="50" y1="58" x2="50" y2="82" stroke="url(#gradient1)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="18" y1="50" x2="42" y2="50" stroke="url(#gradient1)" stroke-width="2" stroke-linecap="round"/>
+  <line x1="58" y1="50" x2="82" y2="50" stroke="url(#gradient1)" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Diagonal spokes - star trek helm -->
+  <line x1="27" y1="27" x2="41" y2="41" stroke="url(#gradient2)" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="73" y1="27" x2="59" y2="41" stroke="url(#gradient2)" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="27" y1="73" x2="41" y2="59" stroke="url(#gradient2)" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="73" y1="73" x2="59" y2="59" stroke="url(#gradient2)" stroke-width="1.5" stroke-linecap="round"/>
+  
+  <!-- Arc segments - viewscreen feel -->
+  <path d="M 25 25 A 35 35 0 0 1 75 25" stroke="url(#gradient1)" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Small accent dots -->
+  <circle cx="50" cy="18" r="3" fill="url(#gradient1)"/>
+  <circle cx="50" cy="82" r="3" fill="url(#gradient1)"/>
+  <circle cx="18" cy="50" r="3" fill="url(#gradient1)"/>
+  <circle cx="82" cy="50" r="3" fill="url(#gradient1)"/>
+  
+  <defs>
+    <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+    <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+  </defs>
+</svg>

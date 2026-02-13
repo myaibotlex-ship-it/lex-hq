@@ -6,8 +6,11 @@ import { Sidebar } from "@/components/sidebar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Lex HQ",
+  title: "The Bridge",
   description: "Your AI-powered command center",
+  icons: {
+    icon: "/logo.svg",
+  },
 };
 
 export default function RootLayout({

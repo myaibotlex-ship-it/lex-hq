@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 import {
   MessageSquare,
   LayoutDashboard,
@@ -12,13 +13,16 @@ import {
   Phone,
   Brain,
   Settings,
-  Zap,
   Menu,
   X,
+  Bot,
+  ScrollText,
 } from "lucide-react";
 
 const navItems = [
   { href: "/", icon: LayoutDashboard, label: "Mission Control" },
+  { href: "/agents", icon: Bot, label: "Agents" },
+  { href: "/logs", icon: ScrollText, label: "Activity Logs" },
   { href: "/chat", icon: MessageSquare, label: "Chat" },
   { href: "/tasks", icon: CheckSquare, label: "Tasks" },
   { href: "/projects", icon: FolderKanban, label: "Projects" },
@@ -58,18 +62,22 @@ export function Sidebar() {
         {/* Logo */}
         <div className="p-6 border-b border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
+            <Image
+              src="/logo.svg"
+              alt="The Bridge"
+              width={40}
+              height={40}
+              className="w-10 h-10"
+            />
             <div>
-              <h1 className="font-bold text-lg">Lex HQ</h1>
+              <h1 className="font-bold text-lg">The Bridge</h1>
               <p className="text-xs text-zinc-500">Command Center</p>
             </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -104,7 +112,7 @@ export function Sidebar() {
           <div className="mt-4 px-3">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-xs text-zinc-500">Lex Online</span>
+              <span className="text-xs text-zinc-500">Systems Online</span>
             </div>
           </div>
         </div>
