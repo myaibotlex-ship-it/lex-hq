@@ -5,8 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar } from "@/components/ui/avatar";
-import { Send, Zap, User, Loader2 } from "lucide-react";
+import { Send, Zap, User, Terminal } from "lucide-react";
 
 interface Message {
   id: string;
@@ -49,7 +48,6 @@ export default function ChatPage() {
     setIsLoading(true);
 
     // TODO: Connect to Clawdbot gateway
-    // For now, simulate a response
     setTimeout(() => {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -70,51 +68,62 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen max-w-5xl mx-auto">
       {/* Header */}
-      <div className="p-6 border-b border-zinc-800">
-        <h1 className="text-2xl font-bold">Chat with Lex</h1>
-        <p className="text-zinc-400 text-sm">Your AI assistant is ready to help</p>
+      <div className="p-4 md:p-6 border-b border-zinc-800 animate-fade-in">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <span className="absolute -bottom-0.5 -right-0.5 status-dot status-dot-active" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold">Chat with Lex</h1>
+            <p className="text-zinc-500 text-xs">Your AI assistant is ready to help</p>
+          </div>
+        </div>
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 p-6" ref={scrollRef}>
-        <div className="max-w-3xl mx-auto space-y-6">
-          {messages.map((message) => (
+      <ScrollArea className="flex-1 p-4 md:p-6" ref={scrollRef}>
+        <div className="space-y-4">
+          {messages.map((message, index) => (
             <div
               key={message.id}
-              className={`flex gap-4 ${
+              className={`flex gap-3 animate-fade-in opacity-0 ${
                 message.role === "user" ? "flex-row-reverse" : ""
               }`}
+              style={{ animationDelay: `${index * 0.05}s` }}
             >
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                   message.role === "assistant"
                     ? "bg-gradient-to-br from-amber-500 to-orange-600"
                     : "bg-zinc-700"
                 }`}
               >
                 {message.role === "assistant" ? (
-                  <Zap className="w-5 h-5 text-white" />
+                  <Zap className="w-4 h-4 text-white" />
                 ) : (
-                  <User className="w-5 h-5 text-white" />
+                  <User className="w-4 h-4 text-white" />
                 )}
               </div>
               <div
-                className={`flex-1 ${
+                className={`flex-1 max-w-[85%] ${
                   message.role === "user" ? "text-right" : ""
                 }`}
               >
                 <div
-                  className={`inline-block p-4 rounded-2xl max-w-[80%] ${
+                  className={`inline-block p-3 rounded-xl text-sm ${
                     message.role === "assistant"
-                      ? "bg-zinc-800 text-left"
+                      ? "bg-zinc-800/80 text-left border border-zinc-700/50"
                       : "bg-amber-600 text-left"
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{message.content}</p>
                 </div>
-                <p className="text-xs text-zinc-500 mt-1">
+                <p className="text-[10px] text-zinc-600 mt-1 font-terminal">
                   {message.timestamp.toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -124,12 +133,16 @@ export default function ChatPage() {
             </div>
           ))}
           {isLoading && (
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
+            <div className="flex gap-3 animate-fade-in">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-white" />
               </div>
-              <div className="bg-zinc-800 p-4 rounded-2xl">
-                <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+              <div className="bg-zinc-800/80 p-3 rounded-xl border border-zinc-700/50">
+                <div className="flex gap-1">
+                  <span className="w-2 h-2 bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
               </div>
             </div>
           )}
@@ -137,29 +150,32 @@ export default function ChatPage() {
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-6 border-t border-zinc-800">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex gap-4">
+      <div className="p-4 md:p-6 border-t border-zinc-800">
+        <div className="flex gap-3">
+          <div className="flex-1 relative">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Message Lex..."
-              className="flex-1 bg-zinc-800 border-zinc-700 resize-none min-h-[50px] max-h-[200px]"
+              className="w-full bg-zinc-800/50 border-zinc-700 resize-none min-h-[44px] max-h-[200px] pr-12 text-sm"
               rows={1}
             />
-            <Button
-              onClick={sendMessage}
-              disabled={!input.trim() || isLoading}
-              className="bg-amber-600 hover:bg-amber-700 px-6"
-            >
-              <Send className="w-5 h-5" />
-            </Button>
+            <div className="absolute right-2 bottom-2">
+              <Button
+                onClick={sendMessage}
+                disabled={!input.trim() || isLoading}
+                size="sm"
+                className="btn-primary-glow h-8 w-8 p-0"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-          <p className="text-xs text-zinc-500 mt-2 text-center">
-            Press Enter to send, Shift+Enter for new line
-          </p>
         </div>
+        <p className="text-[10px] text-zinc-600 mt-2 text-center font-terminal">
+          Press Enter to send • Shift+Enter for new line
+        </p>
       </div>
     </div>
   );

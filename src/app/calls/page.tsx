@@ -13,16 +13,16 @@ import {
   Play,
   FileText,
   Plus,
-  Loader2,
   AlertCircle,
   PhoneMissed,
+  PhoneCall,
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
-  completed: "bg-green-500/20 text-green-400",
-  failed: "bg-red-500/20 text-red-400",
-  pending: "bg-amber-500/20 text-amber-400",
-  in_progress: "bg-blue-500/20 text-blue-400",
+  completed: "badge-active",
+  failed: "badge-error",
+  pending: "badge-warning",
+  in_progress: "bg-blue-500/20 text-blue-400 border-blue-500/30",
 };
 
 function formatDuration(seconds: number | null): string {
@@ -44,6 +44,26 @@ function formatTimestamp(date: string | null): string {
   if (hours < 24) return `${hours}h ago`;
   if (days === 1) return 'Yesterday';
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="p-4 md:p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <div className="skeleton h-8 w-20 mb-2" />
+          <div className="skeleton h-4 w-48" />
+        </div>
+        <div className="skeleton h-9 w-28 rounded-lg" />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="skeleton h-20 rounded-lg" />
+        ))}
+      </div>
+      <div className="skeleton h-96 rounded-lg" />
+    </div>
+  );
 }
 
 export default function CallsPage() {
@@ -76,142 +96,146 @@ export default function CallsPage() {
     total: calls.length,
     completed: calls.filter(c => c.status === 'completed').length,
     totalDuration: calls.reduce((acc, c) => acc + (c.duration_seconds || 0), 0),
+    failed: calls.filter(c => c.status === 'failed').length,
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[50vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-      </div>
-    );
+    return <LoadingSkeleton />;
   }
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Calls</h1>
-          <p className="text-zinc-400">Phone calls made by Lex on your behalf</p>
+          <h1 className="text-2xl md:text-3xl font-bold mb-1">Calls</h1>
+          <p className="text-zinc-500 text-sm">Phone calls made by Lex on your behalf</p>
         </div>
-        <Button className="bg-amber-600 hover:bg-amber-700 w-full md:w-auto">
+        <Button className="btn-primary-glow h-9 text-sm w-full md:w-auto">
           <Plus className="w-4 h-4 mr-2" />
           New Call
         </Button>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2 text-red-400">
-          <AlertCircle className="w-5 h-5" />
-          {error}
-          <Button variant="ghost" size="sm" onClick={() => setError(null)} className="ml-auto">
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center gap-2 text-red-400 text-sm animate-fade-in">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span className="flex-1">{error}</span>
+          <Button variant="ghost" size="sm" onClick={() => setError(null)} className="h-7 text-xs">
             Dismiss
           </Button>
         </div>
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <Card className="bg-zinc-900 border-zinc-800">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-1 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-zinc-400 text-sm">Total Calls</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-zinc-500 text-xs uppercase tracking-wider">Total Calls</p>
+                <p className="text-2xl font-bold mt-0.5">{stats.total}</p>
               </div>
-              <Phone className="w-8 h-8 text-amber-500" />
+              <Phone className="w-8 h-8 text-amber-500/30" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-2 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-zinc-400 text-sm">Completed</p>
-                <p className="text-2xl font-bold">{stats.completed}</p>
+                <p className="text-zinc-500 text-xs uppercase tracking-wider">Completed</p>
+                <p className="text-2xl font-bold text-emerald-400 mt-0.5">{stats.completed}</p>
               </div>
-              <PhoneOutgoing className="w-8 h-8 text-green-500" />
+              <PhoneOutgoing className="w-8 h-8 text-emerald-500/30" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-3 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-zinc-400 text-sm">Total Duration</p>
-                <p className="text-2xl font-bold">{formatDuration(stats.totalDuration)}</p>
+                <p className="text-zinc-500 text-xs uppercase tracking-wider">Total Duration</p>
+                <p className="text-2xl font-bold font-terminal mt-0.5">{formatDuration(stats.totalDuration)}</p>
               </div>
-              <Clock className="w-8 h-8 text-blue-500" />
+              <Clock className="w-8 h-8 text-blue-500/30" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-4 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-zinc-400 text-sm">Failed</p>
-                <p className="text-2xl font-bold">{calls.filter(c => c.status === 'failed').length}</p>
+                <p className="text-zinc-500 text-xs uppercase tracking-wider">Failed</p>
+                <p className={`text-2xl font-bold mt-0.5 ${stats.failed > 0 ? 'text-red-400' : ''}`}>{stats.failed}</p>
               </div>
-              <PhoneMissed className="w-8 h-8 text-red-500" />
+              <PhoneMissed className="w-8 h-8 text-red-500/30" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Call List */}
-      <Card className="bg-zinc-900 border-zinc-800">
-        <CardHeader>
-          <CardTitle>Recent Calls</CardTitle>
+      <Card className="bg-zinc-900/80 border-zinc-800 card-glow animate-slide-up stagger-3 opacity-0">
+        <CardHeader className="pb-2 px-4 pt-4">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase tracking-wider text-zinc-400">
+            <PhoneCall className="w-4 h-4 text-amber-500" />
+            Recent Calls
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="px-4 pb-4 space-y-3">
           {calls.length === 0 ? (
-            <p className="text-center text-zinc-400 py-8">No calls yet</p>
+            <div className="empty-state py-12">
+              <Phone className="empty-state-icon" />
+              <p className="empty-state-text">No calls yet</p>
+            </div>
           ) : (
-            calls.map((call) => (
+            calls.map((call, index) => (
               <div
                 key={call.id}
-                className="p-4 bg-zinc-800 rounded-lg border border-zinc-700 hover:border-zinc-600 transition-colors"
+                className="p-3 bg-zinc-800/40 rounded-lg border border-zinc-800/50 hover:border-zinc-700 transition-all animate-fade-in opacity-0"
+                style={{ animationDelay: `${0.2 + index * 0.05}s` }}
               >
-                <div className="flex flex-col md:flex-row md:items-start justify-between mb-3 gap-2">
+                <div className="flex flex-col md:flex-row md:items-start justify-between mb-2 gap-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                      <User className="w-5 h-5 text-zinc-400" />
+                    <div className="w-9 h-9 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-zinc-500" />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium truncate">{call.to_name || 'Unknown'}</p>
-                      <p className="text-sm text-zinc-400">{call.to_number || 'No number'}</p>
+                      <p className="font-medium text-sm truncate">{call.to_name || 'Unknown'}</p>
+                      <p className="text-xs text-zinc-500 font-terminal">{call.to_number || 'No number'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 md:flex-col md:items-end">
-                    <Badge className={statusColors[call.status] || statusColors.pending}>
+                    <Badge className={statusColors[call.status] || statusColors.pending} variant="outline">
                       {call.status}
                     </Badge>
-                    <p className="text-xs text-zinc-500">{formatTimestamp(call.started_at || call.created_at)}</p>
+                    <p className="text-xs text-zinc-600">{formatTimestamp(call.started_at || call.created_at)}</p>
                   </div>
                 </div>
                 
                 {call.purpose && (
-                  <p className="text-sm text-zinc-300 mb-3">
-                    <span className="text-zinc-500">Purpose:</span> {call.purpose}
+                  <p className="text-xs text-zinc-400 mb-2 font-terminal">
+                    <span className="text-zinc-600">▶</span> {call.purpose}
                   </p>
                 )}
                 
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-                  <div className="flex items-center gap-4 text-sm text-zinc-400">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
+                  <div className="flex items-center gap-3 text-xs text-zinc-500">
+                    <span className="flex items-center gap-1 font-terminal">
+                      <Clock className="w-3 h-3" />
                       {formatDuration(call.duration_seconds)}
                     </span>
                   </div>
                   <div className="flex gap-2">
                     {call.notes && (
-                      <Button variant="outline" size="sm" className="bg-zinc-700 border-zinc-600 h-8 text-xs">
-                        <FileText className="w-4 h-4 mr-1" />
+                      <Button variant="outline" size="sm" className="bg-zinc-800/50 border-zinc-700 h-7 text-xs">
+                        <FileText className="w-3 h-3 mr-1" />
                         Notes
                       </Button>
                     )}
-                    <Button variant="outline" size="sm" className="bg-zinc-700 border-zinc-600 h-8 text-xs">
-                      <Play className="w-4 h-4 mr-1" />
+                    <Button variant="outline" size="sm" className="bg-zinc-800/50 border-zinc-700 h-7 text-xs">
+                      <Play className="w-3 h-3 mr-1" />
                       Listen
                     </Button>
                   </div>
