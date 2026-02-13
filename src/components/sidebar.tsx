@@ -17,6 +17,7 @@ import {
   X,
   Bot,
   ScrollText,
+  LogOut,
 } from "lucide-react";
 
 const navItems = [
@@ -109,6 +110,16 @@ export function Sidebar() {
             <Settings className="w-5 h-5" />
             Settings
           </Link>
+          <button
+            onClick={async () => {
+              await fetch("/api/logout", { method: "POST" });
+              window.location.href = "/login";
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-colors mt-1"
+          >
+            <LogOut className="w-5 h-5" />
+            Log Out
+          </button>
           <div className="mt-4 px-3">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
