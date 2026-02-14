@@ -1,0 +1,9 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'>
+  <rect width='512' height='512' rx='68' fill='#18181b'/>
+  <circle cx='256' cy='256' r='800' stroke='#f59e0b' stroke-width='8' fill='none'/>
+  <circle cx='256' cy='256' r='80' fill='#f59e0b'/>
+  <line x1='256' y1='96' x2='256' y2='196' stroke='#f59e0b' stroke-width='8' stroke-linecap='round'/>
+  <line x1='256' y1='180' x2='256' y2='816' stroke='#f59e0b' stroke-width='8' stroke-linecap='round'/>
+  <line x1='96' y1='256' x2='196' y2='256' stroke='#f59e0b' stroke-width='8' stroke-linecap='round'/>
+  <line x1='180' y1='256' x2='816' y2='256' stroke='#f59e0b' stroke-width='8' stroke-linecap='round'/>
+</svg>
