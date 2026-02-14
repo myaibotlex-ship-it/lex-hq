@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,7 @@ function useRelativeTime(date: string): string {
 }
 
 export default function ProjectsPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -239,7 +241,12 @@ export default function ProjectsPage() {
                       +10%
                     </Button>
                   )}
-                  <Button variant="outline" size="sm" className="bg-zinc-800/50 border-zinc-700 h-7 text-xs hover:bg-zinc-700">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-zinc-800/50 border-zinc-700 h-7 text-xs hover:bg-zinc-700"
+                    onClick={() => router.push(`/projects/${project.id}`)}
+                  >
                     View
                     <ArrowUpRight className="w-3 h-3 ml-1" />
                   </Button>
