@@ -206,7 +206,7 @@ export default function InvestingPage() {
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold mb-1">Investing</h1>
-          <p className="text-zinc-500 text-sm">
+          <p className="text-muted-foreground text-sm">
             Track your watchlist • {lastRefresh ? `Updated ${lastRefresh.toLocaleTimeString()}` : "Loading..."}
           </p>
         </div>
@@ -216,7 +216,7 @@ export default function InvestingPage() {
             size="sm"
             onClick={fetchPrices}
             disabled={refreshing}
-            className="bg-zinc-800/50 border-zinc-700"
+            className="bg-secondary border-border"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
             Refresh
@@ -228,21 +228,21 @@ export default function InvestingPage() {
                 Add Asset
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-zinc-900 border-zinc-800">
+            <DialogContent className="bg-card border-border">
               <DialogHeader>
                 <DialogTitle>Add to Watchlist</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 {/* Quick Add from Popular */}
                 <div>
-                  <label className="text-sm text-zinc-400 mb-2 block">Quick Add</label>
+                  <label className="text-sm text-muted-foreground mb-2 block">Quick Add</label>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       placeholder="Search assets..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9 bg-zinc-800 border-zinc-700"
+                      className="pl-9 bg-secondary border-border"
                     />
                   </div>
                   <div className="mt-2 max-h-48 overflow-y-auto space-y-1">
@@ -252,36 +252,36 @@ export default function InvestingPage() {
                         <button
                           key={`${asset.type}-${asset.symbol}`}
                           onClick={() => addToWatchlist(asset.symbol, asset.type, asset.name)}
-                          className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-zinc-800 transition-colors"
+                          className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-secondary transition-colors"
                         >
                           <div className="flex items-center gap-2">
                             <div className={`w-6 h-6 rounded flex items-center justify-center ${config.bg}`}>
                               <config.icon className={`w-3 h-3 ${config.color}`} />
                             </div>
                             <span className="font-medium">{asset.symbol}</span>
-                            <span className="text-zinc-500 text-sm">{asset.name}</span>
+                            <span className="text-muted-foreground text-sm">{asset.name}</span>
                           </div>
-                          <Plus className="w-4 h-4 text-zinc-500" />
+                          <Plus className="w-4 h-4 text-muted-foreground" />
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                <div className="border-t border-zinc-800 pt-4">
-                  <label className="text-sm text-zinc-400 mb-2 block">Or Add Custom</label>
+                <div className="border-t border-border pt-4">
+                  <label className="text-sm text-muted-foreground mb-2 block">Or Add Custom</label>
                   <div className="grid grid-cols-2 gap-2">
                     <Input
                       placeholder="Symbol (e.g. AAPL)"
                       value={newSymbol}
                       onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
-                      className="bg-zinc-800 border-zinc-700"
+                      className="bg-secondary border-border"
                     />
                     <Select value={newType} onValueChange={(v) => setNewType(v as typeof newType)}>
-                      <SelectTrigger className="bg-zinc-800 border-zinc-700">
+                      <SelectTrigger className="bg-secondary border-border">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-zinc-900 border-zinc-800">
+                      <SelectContent className="bg-card border-border">
                         <SelectItem value="stock">Stock</SelectItem>
                         <SelectItem value="crypto">Crypto</SelectItem>
                         <SelectItem value="metal">Metal</SelectItem>
@@ -292,7 +292,7 @@ export default function InvestingPage() {
                     placeholder="Display Name"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    className="mt-2 bg-zinc-800 border-zinc-700"
+                    className="mt-2 bg-secondary border-border"
                   />
                   <Button
                     onClick={() => addToWatchlist(newSymbol, newType, newName || newSymbol)}
@@ -310,10 +310,10 @@ export default function InvestingPage() {
 
       {/* Watchlist Grid */}
       {watchlist.length === 0 ? (
-        <Card className="bg-zinc-900/80 border-zinc-800">
+        <Card className="bg-card border-border">
           <CardContent className="py-12 text-center">
-            <BarChart3 className="w-12 h-12 mx-auto mb-4 text-zinc-600" />
-            <p className="text-zinc-400 mb-4">Your watchlist is empty</p>
+            <BarChart3 className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground mb-4">Your watchlist is empty</p>
             <Button onClick={() => setDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Add Your First Asset
@@ -330,7 +330,7 @@ export default function InvestingPage() {
             return (
               <Card
                 key={item.id}
-                className="bg-zinc-900/80 border-zinc-800 card-glow animate-fade-in opacity-0 group relative cursor-pointer hover:border-zinc-600 transition-colors"
+                className="bg-card border-border card-glow animate-fade-in opacity-0 group relative cursor-pointer hover:border-border transition-colors"
                 style={{ animationDelay: `${index * 0.05}s` }}
                 onClick={() => setSelectedAsset(item)}
               >
@@ -339,9 +339,9 @@ export default function InvestingPage() {
                     e.stopPropagation();
                     removeFromWatchlist(item.id);
                   }}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-zinc-800 rounded z-10"
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-secondary rounded z-10"
                 >
-                  <X className="w-4 h-4 text-zinc-500" />
+                  <X className="w-4 h-4 text-muted-foreground" />
                 </button>
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-3">
@@ -350,7 +350,7 @@ export default function InvestingPage() {
                     </div>
                     <div>
                       <CardTitle className="text-lg">{item.symbol}</CardTitle>
-                      <p className="text-xs text-zinc-500">{item.display_name}</p>
+                      <p className="text-xs text-muted-foreground">{item.display_name}</p>
                     </div>
                   </div>
                 </CardHeader>
@@ -369,14 +369,14 @@ export default function InvestingPage() {
                         <span>{formatChange(price.change, price.changePercent)}</span>
                       </div>
                       {price.high24h && price.low24h && (
-                        <div className="flex gap-3 mt-2 text-xs text-zinc-500">
+                        <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
                           <span>H: {formatPrice(price.high24h, item.asset_type)}</span>
                           <span>L: {formatPrice(price.low24h, item.asset_type)}</span>
                         </div>
                       )}
                     </>
                   ) : (
-                    <div className="flex items-center gap-2 text-zinc-500">
+                    <div className="flex items-center gap-2 text-muted-foreground">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>Loading...</span>
                     </div>
@@ -389,7 +389,7 @@ export default function InvestingPage() {
       )}
 
       {/* Asset Type Legend */}
-      <div className="mt-6 flex flex-wrap gap-4 justify-center text-sm text-zinc-500">
+      <div className="mt-6 flex flex-wrap gap-4 justify-center text-sm text-muted-foreground">
         {Object.entries(assetTypeConfig).map(([type, config]) => (
           <div key={type} className="flex items-center gap-2">
             <div className={`w-6 h-6 rounded flex items-center justify-center ${config.bg}`}>

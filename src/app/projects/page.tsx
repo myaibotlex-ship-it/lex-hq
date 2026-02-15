@@ -20,7 +20,7 @@ import {
 const statusColors: Record<string, string> = {
   active: "badge-active",
   "on-hold": "badge-warning",
-  completed: "text-zinc-400 border-zinc-600",
+  completed: "text-muted-foreground border-border",
 };
 
 const statusIcons: Record<string, React.ReactNode> = {
@@ -129,7 +129,7 @@ export default function ProjectsPage() {
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold mb-1">Projects</h1>
-          <p className="text-zinc-500 text-sm">Track and manage your projects</p>
+          <p className="text-muted-foreground text-sm">Track and manage your projects</p>
         </div>
         <Button className="btn-primary-glow h-9 text-sm w-full md:w-auto">
           <Plus className="w-4 h-4 mr-2" />
@@ -158,11 +158,11 @@ export default function ProjectsPage() {
             className={`h-8 text-xs whitespace-nowrap ${
               filter === f 
                 ? "btn-primary-glow" 
-                : "bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800"
+                : "bg-secondary border-border hover:bg-secondary"
             }`}
           >
             {f === "on-hold" ? "On Hold" : f.charAt(0).toUpperCase() + f.slice(1)}
-            <Badge variant="outline" className="ml-2 text-[10px] bg-zinc-900/50 border-zinc-700">
+            <Badge variant="outline" className="ml-2 text-[10px] bg-card/50 border-border">
               {counts[f]}
             </Badge>
           </Button>
@@ -174,24 +174,24 @@ export default function ProjectsPage() {
         {filteredProjects.map((project, index) => (
           <Card 
             key={project.id} 
-            className="bg-zinc-900/80 border-zinc-800 card-glow animate-fade-in opacity-0"
+            className="bg-card border-border card-glow animate-fade-in opacity-0"
             style={{ animationDelay: `${index * 0.05}s` }}
           >
             <CardHeader className="pb-2 px-4 pt-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    project.status === 'active' ? 'bg-emerald-500/10' : 
-                    project.status === 'on-hold' ? 'bg-amber-500/10' : 'bg-zinc-800'
+                    project.status === 'active' ? 'bg-accent/10' : 
+                    project.status === 'on-hold' ? 'bg-primary/10' : 'bg-secondary'
                   }`}>
                     <FolderKanban className={`w-5 h-5 ${
-                      project.status === 'active' ? 'text-emerald-400' :
-                      project.status === 'on-hold' ? 'text-amber-400' : 'text-zinc-500'
+                      project.status === 'active' ? 'text-accent' :
+                      project.status === 'on-hold' ? 'text-primary' : 'text-muted-foreground'
                     }`} />
                   </div>
                   <div className="min-w-0">
                     <CardTitle className="text-base truncate">{project.name}</CardTitle>
-                    <p className="text-xs text-zinc-500 truncate">{project.description || 'No description'}</p>
+                    <p className="text-xs text-muted-foreground truncate">{project.description || 'No description'}</p>
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0 opacity-0 hover:opacity-100 transition-opacity">
@@ -210,15 +210,15 @@ export default function ProjectsPage() {
               {/* Progress Bar */}
               <div className="mb-3">
                 <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-zinc-500 uppercase tracking-wider">Progress</span>
+                  <span className="text-muted-foreground uppercase tracking-wider">Progress</span>
                   <span className="font-terminal font-medium">{project.progress_percent}%</span>
                 </div>
-                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
                   <div 
                     className={`h-full rounded-full transition-all duration-500 ${
-                      project.progress_percent === 100 ? 'bg-emerald-500' :
-                      project.progress_percent >= 50 ? 'bg-gradient-to-r from-amber-500 to-amber-400' :
-                      'bg-gradient-to-r from-amber-600 to-amber-500'
+                      project.progress_percent === 100 ? 'bg-accent' :
+                      project.progress_percent >= 50 ? 'bg-gradient-to-r from-primary to-primary/80' :
+                      'bg-gradient-to-r from-primary/80 to-primary'
                     } ${project.progress_percent > 0 ? 'progress-glow' : ''}`}
                     style={{ width: `${project.progress_percent}%` }}
                   />
@@ -227,7 +227,7 @@ export default function ProjectsPage() {
 
               {/* Actions */}
               <div className="flex items-center justify-between text-sm">
-                <span className="text-zinc-600 text-xs">
+                <span className="text-muted-foreground text-xs">
                   Updated {useRelativeTime(project.updated_at)}
                 </span>
                 <div className="flex gap-2">
@@ -235,7 +235,7 @@ export default function ProjectsPage() {
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="bg-zinc-800/50 border-zinc-700 h-7 text-xs hover:bg-zinc-700"
+                      className="bg-secondary border-border h-7 text-xs hover:bg-muted"
                       onClick={() => updateProgress(project.id, Math.min(100, project.progress_percent + 10))}
                     >
                       +10%
@@ -244,7 +244,7 @@ export default function ProjectsPage() {
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="bg-zinc-800/50 border-zinc-700 h-7 text-xs hover:bg-zinc-700"
+                    className="bg-secondary border-border h-7 text-xs hover:bg-muted"
                     onClick={() => router.push(`/projects/${project.id}`)}
                   >
                     View
@@ -258,7 +258,7 @@ export default function ProjectsPage() {
       </div>
 
       {filteredProjects.length === 0 && (
-        <Card className="bg-zinc-900/80 border-zinc-800 animate-fade-in">
+        <Card className="bg-card border-border animate-fade-in">
           <CardContent className="empty-state">
             <FolderKanban className="empty-state-icon" />
             <p className="empty-state-text">No projects found</p>

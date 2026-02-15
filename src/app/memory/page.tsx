@@ -65,7 +65,7 @@ const categoryColors = {
   person: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   business: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   personal: "bg-pink-500/20 text-pink-400 border-pink-500/30",
-  event: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+  event: "bg-primary/20 text-primary border-primary/30",
 };
 
 export default function MemoryPage() {
@@ -75,58 +75,58 @@ export default function MemoryPage() {
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold mb-1">Memory</h1>
-          <p className="text-zinc-500 text-sm">What Lex knows and remembers</p>
+          <p className="text-muted-foreground text-sm">What Lex knows and remembers</p>
         </div>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
             placeholder="Search memories..." 
-            className="pl-9 w-full md:w-64 bg-zinc-800/50 border-zinc-700 h-9 text-sm"
+            className="pl-9 w-full md:w-64 bg-secondary border-border h-9 text-sm"
           />
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-1 opacity-0">
+        <Card className="bg-card border-border hero-stat card-glow animate-fade-in stagger-1 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Brain className="w-8 h-8 text-amber-500/30" />
+              <Brain className="w-8 h-8 text-primary/30" />
               <div>
-                <p className="text-zinc-500 text-xs uppercase tracking-wider">Memory Files</p>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">Memory Files</p>
                 <p className="text-2xl font-bold mt-0.5">15</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-2 opacity-0">
+        <Card className="bg-card border-border hero-stat card-glow animate-fade-in stagger-2 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <User className="w-8 h-8 text-blue-500/30" />
               <div>
-                <p className="text-zinc-500 text-xs uppercase tracking-wider">People</p>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">People</p>
                 <p className="text-2xl font-bold mt-0.5">12</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-3 opacity-0">
+        <Card className="bg-card border-border hero-stat card-glow animate-fade-in stagger-3 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <Building className="w-8 h-8 text-purple-500/30" />
               <div>
-                <p className="text-zinc-500 text-xs uppercase tracking-wider">Companies</p>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">Companies</p>
                 <p className="text-2xl font-bold mt-0.5">8</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-4 opacity-0">
+        <Card className="bg-card border-border hero-stat card-glow animate-fade-in stagger-4 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Zap className="w-8 h-8 text-emerald-500/30" />
+              <Zap className="w-8 h-8 text-accent/30" />
               <div>
-                <p className="text-zinc-500 text-xs uppercase tracking-wider">Skills</p>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">Skills</p>
                 <p className="text-2xl font-bold mt-0.5">12</p>
               </div>
             </div>
@@ -137,10 +137,10 @@ export default function MemoryPage() {
       {/* Memory List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Recent Memories */}
-        <Card className="bg-zinc-900/80 border-zinc-800 card-glow animate-slide-up stagger-2 opacity-0">
+        <Card className="bg-card border-border card-glow animate-slide-up stagger-2 opacity-0">
           <CardHeader className="pb-2 px-4 pt-4">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase tracking-wider text-zinc-400">
-              <Calendar className="w-4 h-4 text-amber-500" />
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+              <Calendar className="w-4 h-4 text-primary" />
               Recent Memories
             </CardTitle>
           </CardHeader>
@@ -150,7 +150,7 @@ export default function MemoryPage() {
               return (
                 <div
                   key={memory.id}
-                  className="p-3 bg-zinc-800/40 rounded-lg border border-zinc-800/50 hover:border-zinc-700 transition-all cursor-pointer group animate-fade-in opacity-0"
+                  className="p-3 bg-secondary/60 rounded-lg border border-border/50 hover:border-border transition-all cursor-pointer group animate-fade-in opacity-0"
                   style={{ animationDelay: `${0.2 + index * 0.05}s` }}
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -160,7 +160,7 @@ export default function MemoryPage() {
                       </div>
                       <div>
                         <p className="font-medium text-sm">{memory.title}</p>
-                        <p className="text-xs text-zinc-600 flex items-center gap-1">
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {memory.date}
                         </p>
@@ -170,7 +170,7 @@ export default function MemoryPage() {
                       {memory.category}
                     </Badge>
                   </div>
-                  <p className="text-xs text-zinc-400 line-clamp-2 font-terminal">{memory.content}</p>
+                  <p className="text-xs text-muted-foreground line-clamp-2 font-terminal">{memory.content}</p>
                 </div>
               );
             })}
@@ -178,9 +178,9 @@ export default function MemoryPage() {
         </Card>
 
         {/* Memory Files */}
-        <Card className="bg-zinc-900/80 border-zinc-800 card-glow animate-slide-in-right stagger-3 opacity-0">
+        <Card className="bg-card border-border card-glow animate-slide-in-right stagger-3 opacity-0">
           <CardHeader className="pb-2 px-4 pt-4">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase tracking-wider text-zinc-400">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
               <FileText className="w-4 h-4 text-blue-500" />
               Memory Files
             </CardTitle>
@@ -196,14 +196,14 @@ export default function MemoryPage() {
             ].map((file, index) => (
               <div
                 key={file.name}
-                className="flex items-center justify-between p-2.5 bg-zinc-800/40 rounded-lg border border-zinc-800/50 hover:border-zinc-700 hover:bg-zinc-800/60 transition-all cursor-pointer animate-fade-in opacity-0"
+                className="flex items-center justify-between p-2.5 bg-secondary/60 rounded-lg border border-border/50 hover:border-border hover:bg-muted transition-all cursor-pointer animate-fade-in opacity-0"
                 style={{ animationDelay: `${0.3 + index * 0.03}s` }}
               >
                 <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-zinc-500" />
+                  <FileText className="w-4 h-4 text-muted-foreground" />
                   <span className="font-terminal text-sm text-zinc-300">{file.name}</span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-zinc-600">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="font-terminal">{file.size}</span>
                   <span>{file.updated}</span>
                 </div>

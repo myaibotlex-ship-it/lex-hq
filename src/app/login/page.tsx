@@ -37,7 +37,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
@@ -51,7 +51,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-zinc-100 tracking-tight">
             The Bridge
           </h1>
-          <p className="text-zinc-500 text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             Authorization required
           </p>
         </div>
@@ -64,7 +64,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter access code"
-              className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg 
+              className="w-full px-4 py-3 bg-card border border-border rounded-lg 
                          text-zinc-100 placeholder-zinc-500 
                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                          transition-all duration-200"
@@ -80,8 +80,8 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || !password}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 
-                       disabled:text-zinc-500 text-white font-medium rounded-lg
+            className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-muted 
+                       disabled:text-muted-foreground text-white font-medium rounded-lg
                        transition-all duration-200 flex items-center justify-center gap-2"
           >
             {loading ? (
@@ -111,7 +111,7 @@ export default function LoginPage() {
         </form>
 
         {/* Footer */}
-        <p className="text-center text-zinc-600 text-xs mt-8">
+        <p className="text-center text-muted-foreground text-xs mt-8">
           Clawdbot Command Center
         </p>
       </div>

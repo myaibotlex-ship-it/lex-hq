@@ -70,17 +70,17 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-screen max-w-5xl mx-auto">
       {/* Header */}
-      <div className="p-4 md:p-6 border-b border-zinc-800 animate-fade-in">
+      <div className="p-4 md:p-6 border-b border-border animate-fade-in">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 status-dot status-dot-active" />
           </div>
           <div>
             <h1 className="text-lg font-bold">Chat with Lex</h1>
-            <p className="text-zinc-500 text-xs">Your AI assistant is ready to help</p>
+            <p className="text-muted-foreground text-xs">Your AI assistant is ready to help</p>
           </div>
         </div>
       </div>
@@ -99,8 +99,8 @@ export default function ChatPage() {
               <div
                 className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                   message.role === "assistant"
-                    ? "bg-gradient-to-br from-amber-500 to-orange-600"
-                    : "bg-zinc-700"
+                    ? "bg-gradient-to-br from-primary to-accent"
+                    : "bg-muted"
                 }`}
               >
                 {message.role === "assistant" ? (
@@ -117,13 +117,13 @@ export default function ChatPage() {
                 <div
                   className={`inline-block p-3 rounded-xl text-sm ${
                     message.role === "assistant"
-                      ? "bg-zinc-800/80 text-left border border-zinc-700/50"
-                      : "bg-amber-600 text-left"
+                      ? "bg-secondary/80 text-left border border-border/50"
+                      : "bg-primary text-left"
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{message.content}</p>
                 </div>
-                <p className="text-[10px] text-zinc-600 mt-1 font-terminal">
+                <p className="text-[10px] text-muted-foreground mt-1 font-terminal">
                   {message.timestamp.toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -134,10 +134,10 @@ export default function ChatPage() {
           ))}
           {isLoading && (
             <div className="flex gap-3 animate-fade-in">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
                 <Zap className="w-4 h-4 text-white" />
               </div>
-              <div className="bg-zinc-800/80 p-3 rounded-xl border border-zinc-700/50">
+              <div className="bg-secondary/80 p-3 rounded-xl border border-border/50">
                 <div className="flex gap-1">
                   <span className="w-2 h-2 bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <span className="w-2 h-2 bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -150,7 +150,7 @@ export default function ChatPage() {
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 md:p-6 border-t border-zinc-800">
+      <div className="p-4 md:p-6 border-t border-border">
         <div className="flex gap-3">
           <div className="flex-1 relative">
             <Textarea
@@ -158,7 +158,7 @@ export default function ChatPage() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Message Lex..."
-              className="w-full bg-zinc-800/50 border-zinc-700 resize-none min-h-[44px] max-h-[200px] pr-12 text-sm"
+              className="w-full bg-secondary border-border resize-none min-h-[44px] max-h-[200px] pr-12 text-sm"
               rows={1}
             />
             <div className="absolute right-2 bottom-2">
@@ -173,7 +173,7 @@ export default function ChatPage() {
             </div>
           </div>
         </div>
-        <p className="text-[10px] text-zinc-600 mt-2 text-center font-terminal">
+        <p className="text-[10px] text-muted-foreground mt-2 text-center font-terminal">
           Press Enter to send • Shift+Enter for new line
         </p>
       </div>

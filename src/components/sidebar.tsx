@@ -75,7 +75,7 @@ export function Sidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-50 md:hidden p-2 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 transition-colors"
+        className="fixed top-4 left-4 z-50 md:hidden p-2 bg-card border border-border rounded-lg hover:bg-secondary transition-colors"
       >
         {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
@@ -91,12 +91,12 @@ export function Sidebar() {
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed md:static w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col h-full z-40 transition-transform duration-300 ease-in-out",
+          "fixed md:static w-64 bg-card border-r border-border flex flex-col h-full z-40 transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
         {/* Logo */}
-        <div className="p-4 border-b border-zinc-800">
+        <div className="p-4 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="relative">
               <Image
@@ -110,7 +110,7 @@ export function Sidebar() {
             </div>
             <div>
               <h1 className="font-bold text-sm">The Bridge</h1>
-              <p className="text-xs text-zinc-600 font-terminal">Command Center</p>
+              <p className="text-xs text-muted-foreground font-terminal">Command Center</p>
             </div>
           </div>
         </div>
@@ -127,13 +127,13 @@ export function Sidebar() {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
                   isActive
-                    ? "bg-zinc-800 text-white border-l-2 border-amber-500 ml-0 pl-[10px]"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
+                    ? "bg-secondary text-white border-l-2 border-primary ml-0 pl-[10px]"
+                    : "text-muted-foreground hover:text-white hover:bg-secondary"
                 )}
               >
                 <item.icon className={cn(
                   "w-4 h-4",
-                  isActive ? "text-amber-500" : ""
+                  isActive ? "text-primary" : ""
                 )} />
                 {item.label}
               </Link>
@@ -142,11 +142,11 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-zinc-800 space-y-1">
+        <div className="p-3 border-t border-border space-y-1">
           <Link
             href="/settings"
             onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-colors"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-white hover:bg-secondary transition-colors"
           >
             <Settings className="w-4 h-4" />
             Settings
@@ -156,20 +156,20 @@ export function Sidebar() {
               await fetch("/api/logout", { method: "POST" });
               window.location.href = "/login";
             }}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800/50 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-white hover:bg-secondary transition-colors"
           >
             <LogOut className="w-4 h-4" />
             Log Out
           </button>
           
           {/* Systems Status Bar */}
-          <div className="mt-3 p-2 bg-zinc-800/50 rounded-lg border border-zinc-800 systems-bar">
+          <div className="mt-3 p-2 bg-secondary rounded-lg border border-border systems-bar">
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 {isOnline ? (
                   <>
                     <span className="status-dot status-dot-active" />
-                    <span className="text-emerald-400 font-medium">Systems Online</span>
+                    <span className="text-accent font-medium">Systems Online</span>
                   </>
                 ) : (
                   <>
@@ -178,15 +178,15 @@ export function Sidebar() {
                   </>
                 )}
               </div>
-              <span className="text-zinc-500 font-terminal">{currentTime}</span>
+              <span className="text-muted-foreground font-terminal">{currentTime}</span>
             </div>
-            <div className="flex items-center gap-3 mt-2 text-[10px] text-zinc-600">
+            <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Activity className="w-3 h-3" />
                 <span>Active</span>
               </div>
               <div className="flex items-center gap-1">
-                {isOnline ? <Wifi className="w-3 h-3 text-emerald-500" /> : <WifiOff className="w-3 h-3 text-red-500" />}
+                {isOnline ? <Wifi className="w-3 h-3 text-accent" /> : <WifiOff className="w-3 h-3 text-red-500" />}
                 <span>Connected</span>
               </div>
             </div>

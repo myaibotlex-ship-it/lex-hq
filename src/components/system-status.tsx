@@ -66,33 +66,33 @@ export function SystemStatus({ className = "" }: SystemStatusProps) {
       {/* Connection Status */}
       <div className="flex items-center gap-1.5">
         {isOnline ? (
-          <Wifi className="w-3.5 h-3.5 text-emerald-500" />
+          <Wifi className="w-3.5 h-3.5 text-accent" />
         ) : (
           <WifiOff className="w-3.5 h-3.5 text-red-500" />
         )}
-        <span className={isOnline ? "text-zinc-500" : "text-red-400"}>
+        <span className={isOnline ? "text-muted-foreground" : "text-red-400"}>
           {isOnline ? "Connected" : "Offline"}
         </span>
       </div>
 
       {/* Divider */}
-      <div className="w-px h-3 bg-zinc-700" />
+      <div className="w-px h-3 bg-muted" />
 
       {/* System Health */}
       <div className="flex items-center gap-1.5">
         {systemHealth === "operational" ? (
-          <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+          <CheckCircle className="w-3.5 h-3.5 text-accent" />
         ) : systemHealth === "degraded" ? (
-          <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+          <AlertCircle className="w-3.5 h-3.5 text-primary" />
         ) : (
           <AlertCircle className="w-3.5 h-3.5 text-red-500" />
         )}
         <span
           className={
             systemHealth === "operational"
-              ? "text-zinc-500"
+              ? "text-muted-foreground"
               : systemHealth === "degraded"
-              ? "text-amber-400"
+              ? "text-primary"
               : "text-red-400"
           }
         >
@@ -105,10 +105,10 @@ export function SystemStatus({ className = "" }: SystemStatusProps) {
       </div>
 
       {/* Divider */}
-      <div className="w-px h-3 bg-zinc-700" />
+      <div className="w-px h-3 bg-muted" />
 
       {/* Last Sync */}
-      <div className="flex items-center gap-1.5 text-zinc-600">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
         <Clock className="w-3.5 h-3.5" />
         <span>Synced {formatSyncTime()}</span>
       </div>

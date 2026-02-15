@@ -140,7 +140,7 @@ export function AssetDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-zinc-900 border-zinc-800 max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${config.bg}`}>
@@ -148,7 +148,7 @@ export function AssetDetailModal({
             </div>
             <div>
               <DialogTitle className="text-xl">{symbol}</DialogTitle>
-              <p className="text-sm text-zinc-500">{displayName}</p>
+              <p className="text-sm text-muted-foreground">{displayName}</p>
             </div>
           </div>
         </DialogHeader>
@@ -166,7 +166,7 @@ export function AssetDetailModal({
                 {change.toFixed(2)} ({isPositive ? "+" : ""}
                 {changePercent.toFixed(2)}%)
               </span>
-              <span className="text-zinc-500 text-sm ml-2">Today</span>
+              <span className="text-muted-foreground text-sm ml-2">Today</span>
             </div>
           )}
         </div>
@@ -182,7 +182,7 @@ export function AssetDetailModal({
               className={
                 selectedRange === range.days
                   ? "btn-primary-glow"
-                  : "bg-zinc-800/50 border-zinc-700"
+                  : "bg-secondary border-border"
               }
             >
               {range.label}
@@ -191,10 +191,10 @@ export function AssetDetailModal({
         </div>
 
         {/* Chart */}
-        <div className="mt-4 h-64 bg-zinc-800/30 rounded-lg p-4">
+        <div className="mt-4 h-64 bg-secondary/40 rounded-lg p-4">
           {loading ? (
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
             </div>
           ) : history.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
@@ -239,7 +239,7 @@ export function AssetDetailModal({
               </AreaChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex items-center justify-center h-full text-zinc-500">
+            <div className="flex items-center justify-center h-full text-muted-foreground">
               No chart data available
             </div>
           )}
@@ -293,8 +293,8 @@ export function AssetDetailModal({
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700/50">
-      <div className="text-xs text-zinc-500 uppercase tracking-wider">{label}</div>
+    <div className="bg-secondary rounded-lg p-3 border border-border/50">
+      <div className="text-xs text-muted-foreground uppercase tracking-wider">{label}</div>
       <div className="text-sm font-medium mt-1">{value}</div>
     </div>
   );

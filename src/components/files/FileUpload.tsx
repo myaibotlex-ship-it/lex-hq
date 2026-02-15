@@ -154,8 +154,8 @@ export function FileUpload({ projectId, onUploadComplete }: FileUploadProps) {
       <Card
         className={`border-2 border-dashed transition-colors cursor-pointer ${
           isDragging
-            ? "border-amber-500 bg-amber-500/5"
-            : "border-zinc-700 bg-zinc-900/50 hover:border-zinc-600"
+            ? "border-primary bg-primary/5"
+            : "border-border bg-card/50 hover:border-border"
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -172,16 +172,16 @@ export function FileUpload({ projectId, onUploadComplete }: FileUploadProps) {
             />
             {uploading ? (
               <>
-                <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-2" />
-                <span className="text-sm text-zinc-400">Uploading...</span>
+                <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
+                <span className="text-sm text-muted-foreground">Uploading...</span>
               </>
             ) : (
               <>
-                <Upload className="w-8 h-8 text-zinc-500 mb-2" />
-                <span className="text-sm text-zinc-400">
+                <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                <span className="text-sm text-muted-foreground">
                   Drop a file here or click to upload
                 </span>
-                <span className="text-xs text-zinc-600 mt-1">
+                <span className="text-xs text-muted-foreground mt-1">
                   PDF, Word, Excel, images, text (max 50MB)
                 </span>
               </>

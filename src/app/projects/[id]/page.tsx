@@ -31,7 +31,7 @@ import {
 const statusColors: Record<string, string> = {
   active: "badge-active",
   "on-hold": "badge-warning",
-  completed: "text-zinc-400 border-zinc-600",
+  completed: "text-muted-foreground border-border",
 };
 
 const statusIcons: Record<string, React.ReactNode> = {
@@ -42,12 +42,12 @@ const statusIcons: Record<string, React.ReactNode> = {
 
 const priorityColors: Record<string, string> = {
   high: "text-red-400 bg-red-500/10 border-red-500/30",
-  medium: "text-amber-400 bg-amber-500/10 border-amber-500/30",
-  low: "text-zinc-400 bg-zinc-500/10 border-zinc-500/30",
+  medium: "text-primary bg-primary/10 border-primary/30",
+  low: "text-muted-foreground bg-zinc-500/10 border-zinc-500/30",
 };
 
 const columnLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  todo: { label: "To Do", icon: <Circle className="w-3 h-3" />, color: "text-zinc-400" },
+  todo: { label: "To Do", icon: <Circle className="w-3 h-3" />, color: "text-muted-foreground" },
   "in_progress": { label: "In Progress", icon: <Clock className="w-3 h-3" />, color: "text-blue-400" },
   done: { label: "Done", icon: <CheckCircle2 className="w-3 h-3" />, color: "text-green-400" },
 };
@@ -180,7 +180,7 @@ export default function ProjectDetailPage() {
     return (
       <div className="p-4 md:p-6">
         <div className="text-center py-12">
-          <AlertTriangle className="mx-auto h-12 w-12 text-amber-500 mb-4" />
+          <AlertTriangle className="mx-auto h-12 w-12 text-primary mb-4" />
           <h2 className="text-xl font-semibold mb-2">Project Not Found</h2>
           <Button variant="outline" onClick={() => router.push("/projects")}>
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -208,20 +208,20 @@ export default function ProjectDetailPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="mb-2 -ml-2 text-zinc-400 hover:text-white"
+            className="mb-2 -ml-2 text-muted-foreground hover:text-white"
             onClick={() => router.push("/projects")}
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
             Projects
           </Button>
           <h1 className="text-2xl md:text-3xl font-display font-bold">{project.name}</h1>
-          <p className="text-zinc-400 mt-1">{project.description?.replace(/URL:\s*https?:\/\/[^\s]+/i, "").trim()}</p>
+          <p className="text-muted-foreground mt-1">{project.description?.replace(/URL:\s*https?:\/\/[^\s]+/i, "").trim()}</p>
           {projectUrl && (
             <a
               href={projectUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-amber-500 hover:text-amber-400 text-sm mt-2"
+              className="inline-flex items-center gap-1 text-primary hover:text-primary text-sm mt-2"
             >
               {projectUrl.replace("https://", "")}
               <ExternalLink className="w-3 h-3" />
@@ -236,11 +236,11 @@ export default function ProjectDetailPage() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Card className="bg-zinc-900/50 border-zinc-800">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-3">
-            <div className="text-xs text-zinc-500 uppercase tracking-wider">Progress</div>
-            <div className="text-2xl font-bold font-terminal text-amber-500">{project.progress_percent}%</div>
-            <div className="h-1 bg-zinc-800 rounded-full mt-2">
+            <div className="text-xs text-muted-foreground uppercase tracking-wider">Progress</div>
+            <div className="text-2xl font-bold font-terminal text-primary">{project.progress_percent}%</div>
+            <div className="h-1 bg-secondary rounded-full mt-2">
               <div
                 className="h-1 bg-amber-500 rounded-full transition-all"
                 style={{ width: `${project.progress_percent}%` }}
@@ -248,27 +248,27 @@ export default function ProjectDetailPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900/50 border-zinc-800">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-3">
-            <div className="text-xs text-zinc-500 uppercase tracking-wider">To Do</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider">To Do</div>
             <div className="text-2xl font-bold font-terminal">{todoTasks.length}</div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900/50 border-zinc-800">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-3">
-            <div className="text-xs text-zinc-500 uppercase tracking-wider">In Progress</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider">In Progress</div>
             <div className="text-2xl font-bold font-terminal text-blue-400">{inProgressTasks.length}</div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900/50 border-zinc-800">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-3">
-            <div className="text-xs text-zinc-500 uppercase tracking-wider">Done</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider">Done</div>
             <div className="text-2xl font-bold font-terminal text-green-400">{doneTasks.length}</div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900/50 border-zinc-800 border-red-500/30">
+        <Card className="bg-card/50 border-border border-red-500/30">
           <CardContent className="p-3">
-            <div className="text-xs text-zinc-500 uppercase tracking-wider">Blockers</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wider">Blockers</div>
             <div className="text-2xl font-bold font-terminal text-red-400">{blockerTasks.length}</div>
           </CardContent>
         </Card>
@@ -288,7 +288,7 @@ export default function ProjectDetailPage() {
               {blockerTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-center justify-between p-2 bg-zinc-900/50 rounded-lg"
+                  className="flex items-center justify-between p-2 bg-card/50 rounded-lg"
                 >
                   <div className="flex items-center gap-2">
                     <Circle className="w-3 h-3 text-red-400" />
@@ -296,13 +296,13 @@ export default function ProjectDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {task.due_date && (
-                      <span className="text-xs text-zinc-500">
+                      <span className="text-xs text-muted-foreground">
                         <Calendar className="w-3 h-3 inline mr-1" />
                         {formatDate(task.due_date)}
                       </span>
                     )}
                     {task.labels?.filter(l => l.startsWith("agent:")).map((label) => (
-                      <Badge key={label} variant="outline" className="text-xs border-zinc-700">
+                      <Badge key={label} variant="outline" className="text-xs border-border">
                         <Users className="w-3 h-3 mr-1" />
                         {label.replace("agent:", "")}
                       </Badge>
@@ -317,7 +317,7 @@ export default function ProjectDetailPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-zinc-900 border border-zinc-800">
+        <TabsList className="bg-card border border-border">
           <TabsTrigger value="tasks" className="gap-2">
             <ListTodo className="w-4 h-4" />
             Tasks ({tasks.length})
@@ -335,9 +335,9 @@ export default function ProjectDetailPage() {
         <TabsContent value="tasks" className="mt-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* To Do Column */}
-            <Card className="bg-zinc-900/50 border-zinc-800">
+            <Card className="bg-card/50 border-border">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2 text-zinc-400">
+                <CardTitle className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
                   <Circle className="w-4 h-4" />
                   To Do ({todoTasks.length})
                 </CardTitle>
@@ -347,13 +347,13 @@ export default function ProjectDetailPage() {
                   <TaskCard key={task.id} task={task} onStatusChange={updateTaskStatus} />
                 ))}
                 {todoTasks.length === 0 && (
-                  <div className="text-zinc-600 text-sm text-center py-4">No tasks</div>
+                  <div className="text-muted-foreground text-sm text-center py-4">No tasks</div>
                 )}
               </CardContent>
             </Card>
 
             {/* In Progress Column */}
-            <Card className="bg-zinc-900/50 border-zinc-800">
+            <Card className="bg-card/50 border-border">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2 text-blue-400">
                   <Clock className="w-4 h-4" />
@@ -365,13 +365,13 @@ export default function ProjectDetailPage() {
                   <TaskCard key={task.id} task={task} onStatusChange={updateTaskStatus} />
                 ))}
                 {inProgressTasks.length === 0 && (
-                  <div className="text-zinc-600 text-sm text-center py-4">No tasks</div>
+                  <div className="text-muted-foreground text-sm text-center py-4">No tasks</div>
                 )}
               </CardContent>
             </Card>
 
             {/* Done Column */}
-            <Card className="bg-zinc-900/50 border-zinc-800">
+            <Card className="bg-card/50 border-border">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2 text-green-400">
                   <CheckCircle2 className="w-4 h-4" />
@@ -383,7 +383,7 @@ export default function ProjectDetailPage() {
                   <TaskCard key={task.id} task={task} onStatusChange={updateTaskStatus} />
                 ))}
                 {doneTasks.length === 0 && (
-                  <div className="text-zinc-600 text-sm text-center py-4">No tasks</div>
+                  <div className="text-muted-foreground text-sm text-center py-4">No tasks</div>
                 )}
               </CardContent>
             </Card>
@@ -391,7 +391,7 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="files" className="mt-4">
-          <Card className="bg-zinc-900/50 border-zinc-800">
+          <Card className="bg-card/50 border-border">
             <CardContent className="p-4 space-y-4">
               <FileUpload
                 projectId={projectId}
@@ -406,14 +406,14 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="activity" className="mt-4">
-          <Card className="bg-zinc-900/50 border-zinc-800">
+          <Card className="bg-card/50 border-border">
             <CardContent className="p-4">
               {activities.length > 0 ? (
                 <div className="space-y-3">
                   {activities.map((activity) => (
                     <div
                       key={activity.id}
-                      className="flex items-start gap-3 p-3 bg-zinc-800/50 rounded-lg"
+                      className="flex items-start gap-3 p-3 bg-secondary rounded-lg"
                     >
                       <div
                         className={`w-2 h-2 rounded-full mt-2 ${
@@ -423,16 +423,16 @@ export default function ProjectDetailPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium text-sm">{activity.action_type}</span>
-                          <Badge variant="outline" className="text-xs border-zinc-700">
+                          <Badge variant="outline" className="text-xs border-border">
                             {activity.action_category}
                           </Badge>
                         </div>
-                        <div className="text-xs text-zinc-500 font-terminal">
+                        <div className="text-xs text-muted-foreground font-terminal">
                           {typeof activity.details === "object"
                             ? JSON.stringify(activity.details).slice(0, 100)
                             : String(activity.details || "").slice(0, 100)}
                         </div>
-                        <div className="text-xs text-zinc-600 mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           {useRelativeTime(activity.timestamp)}
                         </div>
                       </div>
@@ -440,7 +440,7 @@ export default function ProjectDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-zinc-600">
+                <div className="text-center py-8 text-muted-foreground">
                   <Activity className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p>No activity logged yet</p>
                   <p className="text-xs mt-1">Agent updates will appear here</p>
@@ -466,17 +466,17 @@ function TaskCard({
 
   return (
     <div
-      className={`p-3 rounded-lg border transition-all hover:border-zinc-600 ${
+      className={`p-3 rounded-lg border transition-all hover:border-border ${
         isBlocker
           ? "bg-red-500/5 border-red-500/30"
-          : "bg-zinc-800/50 border-zinc-700/50"
+          : "bg-secondary border-border/50"
       }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-medium leading-tight">{task.title}</h4>
           {task.description && (
-            <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{task.description}</p>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{task.description}</p>
           )}
         </div>
         {task.priority && (
@@ -486,16 +486,16 @@ function TaskCard({
         )}
       </div>
 
-      <div className="flex items-center justify-between mt-2 pt-2 border-t border-zinc-700/50">
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
         <div className="flex items-center gap-2">
           {task.due_date && (
-            <span className="text-xs text-zinc-500 flex items-center gap-1">
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               {formatDate(task.due_date)}
             </span>
           )}
           {agentLabel && (
-            <Badge variant="outline" className="text-xs border-zinc-700 px-1.5">
+            <Badge variant="outline" className="text-xs border-border px-1.5">
               <Users className="w-3 h-3 mr-1" />
               {agentLabel.replace("agent:", "")}
             </Badge>

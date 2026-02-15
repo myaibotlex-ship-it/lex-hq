@@ -109,7 +109,7 @@ export default function CallsPage() {
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold mb-1">Calls</h1>
-          <p className="text-zinc-500 text-sm">Phone calls made by Lex on your behalf</p>
+          <p className="text-muted-foreground text-sm">Phone calls made by Lex on your behalf</p>
         </div>
         <Button className="btn-primary-glow h-9 text-sm w-full md:w-auto">
           <Plus className="w-4 h-4 mr-2" />
@@ -129,44 +129,44 @@ export default function CallsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-1 opacity-0">
+        <Card className="bg-card border-border hero-stat card-glow animate-fade-in stagger-1 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-zinc-500 text-xs uppercase tracking-wider">Total Calls</p>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">Total Calls</p>
                 <p className="text-2xl font-bold mt-0.5">{stats.total}</p>
               </div>
-              <Phone className="w-8 h-8 text-amber-500/30" />
+              <Phone className="w-8 h-8 text-primary/30" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-2 opacity-0">
+        <Card className="bg-card border-border hero-stat card-glow animate-fade-in stagger-2 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-zinc-500 text-xs uppercase tracking-wider">Completed</p>
-                <p className="text-2xl font-bold text-emerald-400 mt-0.5">{stats.completed}</p>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">Completed</p>
+                <p className="text-2xl font-bold text-accent mt-0.5">{stats.completed}</p>
               </div>
-              <PhoneOutgoing className="w-8 h-8 text-emerald-500/30" />
+              <PhoneOutgoing className="w-8 h-8 text-accent/30" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-3 opacity-0">
+        <Card className="bg-card border-border hero-stat card-glow animate-fade-in stagger-3 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-zinc-500 text-xs uppercase tracking-wider">Total Duration</p>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">Total Duration</p>
                 <p className="text-2xl font-bold font-terminal mt-0.5">{formatDuration(stats.totalDuration)}</p>
               </div>
               <Clock className="w-8 h-8 text-blue-500/30" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-zinc-900/80 border-zinc-800 hero-stat card-glow animate-fade-in stagger-4 opacity-0">
+        <Card className="bg-card border-border hero-stat card-glow animate-fade-in stagger-4 opacity-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-zinc-500 text-xs uppercase tracking-wider">Failed</p>
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">Failed</p>
                 <p className={`text-2xl font-bold mt-0.5 ${stats.failed > 0 ? 'text-red-400' : ''}`}>{stats.failed}</p>
               </div>
               <PhoneMissed className="w-8 h-8 text-red-500/30" />
@@ -176,10 +176,10 @@ export default function CallsPage() {
       </div>
 
       {/* Call List */}
-      <Card className="bg-zinc-900/80 border-zinc-800 card-glow animate-slide-up stagger-3 opacity-0">
+      <Card className="bg-card border-border card-glow animate-slide-up stagger-3 opacity-0">
         <CardHeader className="pb-2 px-4 pt-4">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase tracking-wider text-zinc-400">
-            <PhoneCall className="w-4 h-4 text-amber-500" />
+          <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
+            <PhoneCall className="w-4 h-4 text-primary" />
             Recent Calls
           </CardTitle>
         </CardHeader>
@@ -193,35 +193,35 @@ export default function CallsPage() {
             calls.map((call, index) => (
               <div
                 key={call.id}
-                className="p-3 bg-zinc-800/40 rounded-lg border border-zinc-800/50 hover:border-zinc-700 transition-all animate-fade-in opacity-0"
+                className="p-3 bg-secondary/60 rounded-lg border border-border/50 hover:border-border transition-all animate-fade-in opacity-0"
                 style={{ animationDelay: `${0.2 + index * 0.05}s` }}
               >
                 <div className="flex flex-col md:flex-row md:items-start justify-between mb-2 gap-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-zinc-800 flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-zinc-500" />
+                    <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium text-sm truncate">{call.to_name || 'Unknown'}</p>
-                      <p className="text-xs text-zinc-500 font-terminal">{call.to_number || 'No number'}</p>
+                      <p className="text-xs text-muted-foreground font-terminal">{call.to_number || 'No number'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 md:flex-col md:items-end">
                     <Badge className={statusColors[call.status] || statusColors.pending} variant="outline">
                       {call.status}
                     </Badge>
-                    <p className="text-xs text-zinc-600">{formatTimestamp(call.started_at || call.created_at)}</p>
+                    <p className="text-xs text-muted-foreground">{formatTimestamp(call.started_at || call.created_at)}</p>
                   </div>
                 </div>
                 
                 {call.purpose && (
-                  <p className="text-xs text-zinc-400 mb-2 font-terminal">
-                    <span className="text-zinc-600">▶</span> {call.purpose}
+                  <p className="text-xs text-muted-foreground mb-2 font-terminal">
+                    <span className="text-muted-foreground">▶</span> {call.purpose}
                   </p>
                 )}
                 
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-                  <div className="flex items-center gap-3 text-xs text-zinc-500">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1 font-terminal">
                       <Clock className="w-3 h-3" />
                       {formatDuration(call.duration_seconds)}
@@ -229,12 +229,12 @@ export default function CallsPage() {
                   </div>
                   <div className="flex gap-2">
                     {call.notes && (
-                      <Button variant="outline" size="sm" className="bg-zinc-800/50 border-zinc-700 h-7 text-xs">
+                      <Button variant="outline" size="sm" className="bg-secondary border-border h-7 text-xs">
                         <FileText className="w-3 h-3 mr-1" />
                         Notes
                       </Button>
                     )}
-                    <Button variant="outline" size="sm" className="bg-zinc-800/50 border-zinc-700 h-7 text-xs">
+                    <Button variant="outline" size="sm" className="bg-secondary border-border h-7 text-xs">
                       <Play className="w-3 h-3 mr-1" />
                       Listen
                     </Button>

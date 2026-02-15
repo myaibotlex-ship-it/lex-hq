@@ -25,9 +25,9 @@ const priorityColors = {
 };
 
 const columns = [
-  { id: "todo", title: "To Do", icon: Circle, color: "text-zinc-400" },
-  { id: "in_progress", title: "In Progress", icon: Clock, color: "text-amber-500" },
-  { id: "done", title: "Done", icon: CheckCircle2, color: "text-emerald-500" },
+  { id: "todo", title: "To Do", icon: Circle, color: "text-muted-foreground" },
+  { id: "in_progress", title: "In Progress", icon: Clock, color: "text-primary" },
+  { id: "done", title: "Done", icon: CheckCircle2, color: "text-accent" },
 ];
 
 function LoadingSkeleton() {
@@ -151,14 +151,14 @@ export default function TasksPage() {
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fade-in">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold mb-1">Tasks</h1>
-          <p className="text-zinc-500 text-sm">Manage your to-dos and follow-ups</p>
+          <p className="text-muted-foreground text-sm">Manage your to-dos and follow-ups</p>
         </div>
         <div className="flex gap-2">
           <Input
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}
             placeholder="Add a new task..."
-            className="flex-1 md:w-64 bg-zinc-800/50 border-zinc-700 h-9 text-sm"
+            className="flex-1 md:w-64 bg-secondary border-border h-9 text-sm"
             onKeyDown={(e) => e.key === "Enter" && addTask()}
             disabled={adding}
           />
@@ -188,14 +188,14 @@ export default function TasksPage() {
         {columns.map((column, colIndex) => (
           <Card 
             key={column.id} 
-            className="bg-zinc-900/80 border-zinc-800 card-glow animate-fade-in opacity-0"
+            className="bg-card border-border card-glow animate-fade-in opacity-0"
             style={{ animationDelay: `${colIndex * 0.1}s` }}
           >
             <CardHeader className="pb-2 px-4 pt-4">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase tracking-wider text-zinc-400">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 uppercase tracking-wider text-muted-foreground">
                 <column.icon className={`w-4 h-4 ${column.color}`} />
                 {column.title}
-                <Badge variant="outline" className="ml-auto text-xs bg-zinc-800 border-zinc-700">
+                <Badge variant="outline" className="ml-auto text-xs bg-secondary border-border">
                   {taskCounts[column.id as keyof typeof taskCounts]}
                 </Badge>
               </CardTitle>
@@ -206,11 +206,11 @@ export default function TasksPage() {
                 .map((task, index) => (
                   <div
                     key={task.id}
-                    className="p-3 bg-zinc-800/40 rounded-lg border border-zinc-800/50 hover:border-zinc-700 transition-all cursor-pointer group animate-fade-in opacity-0"
+                    className="p-3 bg-secondary/60 rounded-lg border border-border/50 hover:border-border transition-all cursor-pointer group animate-fade-in opacity-0"
                     style={{ animationDelay: `${(colIndex * 0.1) + (index * 0.03)}s` }}
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <p className={`font-medium text-sm ${task.column_id === "done" ? "line-through text-zinc-500" : ""}`}>
+                      <p className={`font-medium text-sm ${task.column_id === "done" ? "line-through text-muted-foreground" : ""}`}>
                         {task.title}
                       </p>
                       <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 transition-opacity">
@@ -223,14 +223,14 @@ export default function TasksPage() {
                       </Badge>
                       {task.due_date && (
                         <span className={`text-xs flex items-center gap-1 ${
-                          formatDueDate(task.due_date) === 'Overdue' ? 'text-red-400' : 'text-zinc-500'
+                          formatDueDate(task.due_date) === 'Overdue' ? 'text-red-400' : 'text-muted-foreground'
                         }`}>
                           <Calendar className="w-3 h-3" />
                           {formatDueDate(task.due_date)}
                         </span>
                       )}
                       {task.category && (
-                        <Badge variant="outline" className="text-zinc-500 border-zinc-700 text-xs">
+                        <Badge variant="outline" className="text-muted-foreground border-border text-xs">
                           {task.category}
                         </Badge>
                       )}
@@ -241,7 +241,7 @@ export default function TasksPage() {
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            className="text-xs h-7 bg-zinc-800/50 border-zinc-700 hover:bg-zinc-700"
+                            className="text-xs h-7 bg-secondary border-border hover:bg-muted"
                             onClick={(e) => {
                               e.stopPropagation();
                               moveTask(task.id, "in_progress");
@@ -254,7 +254,7 @@ export default function TasksPage() {
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="text-xs h-7 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                          className="text-xs h-7 text-accent border-accent/30 hover:bg-accent/10"
                           onClick={(e) => {
                             e.stopPropagation();
                             moveTask(task.id, "done");
