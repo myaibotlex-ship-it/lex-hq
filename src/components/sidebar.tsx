@@ -22,6 +22,7 @@ import {
   Wifi,
   WifiOff,
   Activity,
+  TrendingUp,
 } from "lucide-react";
 
 const navItems = [
@@ -32,6 +33,7 @@ const navItems = [
   { href: "/chat", icon: MessageSquare, label: "Chat" },
   { href: "/tasks", icon: CheckSquare, label: "Tasks" },
   { href: "/projects", icon: FolderKanban, label: "Projects" },
+  { href: "/investing", icon: TrendingUp, label: "Investing" },
   { href: "/calls", icon: Phone, label: "Calls" },
   { href: "/memory", icon: Brain, label: "Memory" },
 ];

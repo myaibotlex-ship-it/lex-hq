@@ -90,6 +90,15 @@ export interface ResearchSource {
 
 export type UpgradeStatus = 'planned' | 'in_progress' | 'deployed' | 'rejected';
 
+export interface WatchlistItem {
+  id: string;
+  symbol: string;
+  asset_type: 'metal' | 'crypto' | 'stock';
+  display_name: string;
+  sort_order: number;
+  created_at: string;
+}
+
 export interface ProjectFile {
   id: string;
   project_id: string;
