@@ -75,22 +75,23 @@ async function fetchStockHistory(symbol: string, days: number = 7): Promise<Hist
   }
 }
 
-// Fetch metal history using Yahoo Finance chart API (GLD/SLV ETFs)
+// Fetch metal history using Yahoo Finance chart API (futures contracts)
 async function fetchMetalHistory(symbol: string, days: number = 7): Promise<HistoryPoint[]> {
   try {
-    const metalMap: Record<string, { etf: string; factor: number }> = {
-      XAU: { etf: "GLD", factor: 10 },
-      XAG: { etf: "SLV", factor: 1 },
+    const metalMap: Record<string, string> = {
+      XAU: "GC=F",  // Gold futures
+      XAG: "SI=F",  // Silver futures
+      XPT: "PL=F",  // Platinum futures
     };
     
-    const config = metalMap[symbol];
-    if (!config) return [];
+    const ticker = metalMap[symbol];
+    if (!ticker) return [];
     
     const period1 = Math.floor((Date.now() - days * 24 * 60 * 60 * 1000) / 1000);
     const period2 = Math.floor(Date.now() / 1000);
     
     const res = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${config.etf}?period1=${period1}&period2=${period2}&interval=1d`,
+      `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${period1}&period2=${period2}&interval=1d`,
       {
         next: { revalidate: 300 },
         headers: { "User-Agent": "Mozilla/5.0" },
@@ -105,7 +106,7 @@ async function fetchMetalHistory(symbol: string, days: number = 7): Promise<Hist
     
     return timestamps.map((ts: number, i: number) => ({
       timestamp: ts * 1000,
-      price: (prices[i] || 0) * config.factor,
+      price: prices[i] || 0,
       date: new Date(ts * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
     })).filter((p: HistoryPoint) => p.price > 0);
   } catch (error) {

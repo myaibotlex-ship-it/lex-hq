@@ -10,21 +10,22 @@ interface PriceData {
   lastUpdated: string;
 }
 
-// Fetch metal prices using Yahoo Finance chart API (GLD/SLV ETFs as proxies)
+// Fetch metal prices using Yahoo Finance chart API (futures contracts)
 async function fetchMetalPrices(): Promise<Record<string, PriceData>> {
   try {
-    // Map metal symbols to ETF tickers and conversion factors
-    const metalMap: Record<string, { etf: string; factor: number }> = {
-      XAU: { etf: "GLD", factor: 10 }, // GLD ≈ 1/10 oz gold
-      XAG: { etf: "SLV", factor: 1 },  // SLV tracks silver price closely
+    // Map metal symbols to futures tickers
+    const metalMap: Record<string, string> = {
+      XAU: "GC=F",  // Gold futures
+      XAG: "SI=F",  // Silver futures
+      XPT: "PL=F",  // Platinum futures
     };
     
     const prices: Record<string, PriceData> = {};
     
-    for (const [symbol, { etf, factor }] of Object.entries(metalMap)) {
+    for (const [symbol, ticker] of Object.entries(metalMap)) {
       try {
         const res = await fetch(
-          `https://query1.finance.yahoo.com/v8/finance/chart/${etf}?interval=1d&range=2d`,
+          `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`,
           {
             next: { revalidate: 60 },
             headers: { "User-Agent": "Mozilla/5.0" },
@@ -38,11 +39,10 @@ async function fetchMetalPrices(): Promise<Record<string, PriceData>> {
         if (!result) continue;
         
         const meta = result.meta;
-        const quotes = result.indicators?.quote?.[0];
         
         // Get current and previous close
-        const currentPrice = meta.regularMarketPrice * factor;
-        const previousClose = meta.chartPreviousClose * factor;
+        const currentPrice = meta.regularMarketPrice;
+        const previousClose = meta.chartPreviousClose;
         const change = currentPrice - previousClose;
         const changePercent = (change / previousClose) * 100;
         
@@ -51,8 +51,8 @@ async function fetchMetalPrices(): Promise<Record<string, PriceData>> {
           price: currentPrice,
           change,
           changePercent,
-          high24h: meta.regularMarketDayHigh * factor,
-          low24h: meta.regularMarketDayLow * factor,
+          high24h: meta.regularMarketDayHigh,
+          low24h: meta.regularMarketDayLow,
           lastUpdated: new Date().toISOString(),
         };
       } catch (err) {
