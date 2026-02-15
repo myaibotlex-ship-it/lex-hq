@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AssetDetailModal } from "@/components/investing/AssetDetailModal";
 
 interface PriceData {
   symbol: string;
@@ -103,6 +104,7 @@ export default function InvestingPage() {
   const [newType, setNewType] = useState<"metal" | "crypto" | "stock">("stock");
   const [newName, setNewName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedAsset, setSelectedAsset] = useState<WatchlistItem | null>(null);
 
   const fetchWatchlist = useCallback(async () => {
     const { data, error } = await supabase
@@ -328,12 +330,16 @@ export default function InvestingPage() {
             return (
               <Card
                 key={item.id}
-                className="bg-zinc-900/80 border-zinc-800 card-glow animate-fade-in opacity-0 group relative"
+                className="bg-zinc-900/80 border-zinc-800 card-glow animate-fade-in opacity-0 group relative cursor-pointer hover:border-zinc-600 transition-colors"
                 style={{ animationDelay: `${index * 0.05}s` }}
+                onClick={() => setSelectedAsset(item)}
               >
                 <button
-                  onClick={() => removeFromWatchlist(item.id)}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-zinc-800 rounded"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeFromWatchlist(item.id);
+                  }}
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-zinc-800 rounded z-10"
                 >
                   <X className="w-4 h-4 text-zinc-500" />
                 </button>
@@ -393,6 +399,20 @@ export default function InvestingPage() {
           </div>
         ))}
       </div>
+
+      {/* Asset Detail Modal */}
+      {selectedAsset && (
+        <AssetDetailModal
+          open={!!selectedAsset}
+          onClose={() => setSelectedAsset(null)}
+          symbol={selectedAsset.symbol}
+          displayName={selectedAsset.display_name}
+          assetType={selectedAsset.asset_type}
+          currentPrice={prices[selectedAsset.symbol]?.price}
+          change={prices[selectedAsset.symbol]?.change}
+          changePercent={prices[selectedAsset.symbol]?.changePercent}
+        />
+      )}
     </div>
   );
 }
