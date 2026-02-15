@@ -10,64 +10,53 @@ interface PriceData {
   lastUpdated: string;
 }
 
-// Fetch metal prices from metals.live
+// Fetch metal prices using Yahoo Finance chart API (GLD/SLV ETFs as proxies)
 async function fetchMetalPrices(): Promise<Record<string, PriceData>> {
   try {
-    const res = await fetch("https://api.metals.live/v1/spot", {
-      next: { revalidate: 60 },
-    });
-    if (!res.ok) throw new Error("Metals API failed");
-    const data = await res.json();
+    // Map metal symbols to ETF tickers and conversion factors
+    const metalMap: Record<string, { etf: string; factor: number }> = {
+      XAU: { etf: "GLD", factor: 10 }, // GLD ≈ 1/10 oz gold
+      XAG: { etf: "SLV", factor: 1 },  // SLV tracks silver price closely
+    };
     
     const prices: Record<string, PriceData> = {};
     
-    // metals.live returns array of [timestamp, gold, silver, platinum, palladium]
-    if (Array.isArray(data) && data.length > 0) {
-      const latest = data[data.length - 1];
-      const previous = data.length > 1 ? data[data.length - 2] : latest;
-      
-      const goldPrice = latest.gold || latest[1];
-      const silverPrice = latest.silver || latest[2];
-      const platinumPrice = latest.platinum || latest[3];
-      const palladiumPrice = latest.palladium || latest[4];
-      
-      const prevGold = previous.gold || previous[1];
-      const prevSilver = previous.silver || previous[2];
-      
-      prices["XAU"] = {
-        symbol: "XAU",
-        price: goldPrice,
-        change: goldPrice - prevGold,
-        changePercent: ((goldPrice - prevGold) / prevGold) * 100,
-        lastUpdated: new Date().toISOString(),
-      };
-      
-      prices["XAG"] = {
-        symbol: "XAG",
-        price: silverPrice,
-        change: silverPrice - prevSilver,
-        changePercent: ((silverPrice - prevSilver) / prevSilver) * 100,
-        lastUpdated: new Date().toISOString(),
-      };
-      
-      if (platinumPrice) {
-        prices["XPT"] = {
-          symbol: "XPT",
-          price: platinumPrice,
-          change: 0,
-          changePercent: 0,
+    for (const [symbol, { etf, factor }] of Object.entries(metalMap)) {
+      try {
+        const res = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${etf}?interval=1d&range=2d`,
+          {
+            next: { revalidate: 60 },
+            headers: { "User-Agent": "Mozilla/5.0" },
+          }
+        );
+        
+        if (!res.ok) continue;
+        const data = await res.json();
+        
+        const result = data.chart?.result?.[0];
+        if (!result) continue;
+        
+        const meta = result.meta;
+        const quotes = result.indicators?.quote?.[0];
+        
+        // Get current and previous close
+        const currentPrice = meta.regularMarketPrice * factor;
+        const previousClose = meta.chartPreviousClose * factor;
+        const change = currentPrice - previousClose;
+        const changePercent = (change / previousClose) * 100;
+        
+        prices[symbol] = {
+          symbol,
+          price: currentPrice,
+          change,
+          changePercent,
+          high24h: meta.regularMarketDayHigh * factor,
+          low24h: meta.regularMarketDayLow * factor,
           lastUpdated: new Date().toISOString(),
         };
-      }
-      
-      if (palladiumPrice) {
-        prices["XPD"] = {
-          symbol: "XPD",
-          price: palladiumPrice,
-          change: 0,
-          changePercent: 0,
-          lastUpdated: new Date().toISOString(),
-        };
+      } catch (err) {
+        console.error(`Failed to fetch ${symbol}:`, err);
       }
     }
     
@@ -132,45 +121,50 @@ async function fetchCryptoPrices(symbols: string[]): Promise<Record<string, Pric
   }
 }
 
-// Fetch stock prices from Yahoo Finance (via query)
+// Fetch stock prices from Yahoo Finance (via chart API)
 async function fetchStockPrices(symbols: string[]): Promise<Record<string, PriceData>> {
-  try {
-    const prices: Record<string, PriceData> = {};
-    
-    // Use Yahoo Finance v7 API
-    const symbolStr = symbols.join(",");
-    const res = await fetch(
-      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolStr}`,
-      {
-        next: { revalidate: 60 },
-        headers: {
-          "User-Agent": "Mozilla/5.0",
-        },
-      }
-    );
-    
-    if (!res.ok) throw new Error("Yahoo Finance API failed");
-    const data = await res.json();
-    
-    if (data.quoteResponse?.result) {
-      for (const quote of data.quoteResponse.result) {
-        prices[quote.symbol] = {
-          symbol: quote.symbol,
-          price: quote.regularMarketPrice || 0,
-          change: quote.regularMarketChange || 0,
-          changePercent: quote.regularMarketChangePercent || 0,
-          high24h: quote.regularMarketDayHigh,
-          low24h: quote.regularMarketDayLow,
+  const prices: Record<string, PriceData> = {};
+  
+  // Fetch each symbol individually using chart API
+  await Promise.all(
+    symbols.map(async (symbol) => {
+      try {
+        const res = await fetch(
+          `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`,
+          {
+            next: { revalidate: 60 },
+            headers: { "User-Agent": "Mozilla/5.0" },
+          }
+        );
+        
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        const result = data.chart?.result?.[0];
+        if (!result) return;
+        
+        const meta = result.meta;
+        const currentPrice = meta.regularMarketPrice;
+        const previousClose = meta.chartPreviousClose;
+        const change = currentPrice - previousClose;
+        const changePercent = (change / previousClose) * 100;
+        
+        prices[symbol] = {
+          symbol,
+          price: currentPrice,
+          change,
+          changePercent,
+          high24h: meta.regularMarketDayHigh,
+          low24h: meta.regularMarketDayLow,
           lastUpdated: new Date().toISOString(),
         };
+      } catch (err) {
+        console.error(`Failed to fetch ${symbol}:`, err);
       }
-    }
-    
-    return prices;
-  } catch (error) {
-    console.error("Stock prices fetch error:", error);
-    return {};
-  }
+    })
+  );
+  
+  return prices;
 }
 
 export async function GET(request: Request) {

@@ -75,23 +75,38 @@ async function fetchStockHistory(symbol: string, days: number = 7): Promise<Hist
   }
 }
 
-// Fetch metal history (metals.live has limited history, use approximation)
-async function fetchMetalHistory(symbol: string): Promise<HistoryPoint[]> {
+// Fetch metal history using Yahoo Finance chart API (GLD/SLV ETFs)
+async function fetchMetalHistory(symbol: string, days: number = 7): Promise<HistoryPoint[]> {
   try {
-    const res = await fetch("https://api.metals.live/v1/spot/all", {
-      next: { revalidate: 300 },
-    });
+    const metalMap: Record<string, { etf: string; factor: number }> = {
+      XAU: { etf: "GLD", factor: 10 },
+      XAG: { etf: "SLV", factor: 1 },
+    };
     
-    if (!res.ok) throw new Error("Metals history API failed");
+    const config = metalMap[symbol];
+    if (!config) return [];
+    
+    const period1 = Math.floor((Date.now() - days * 24 * 60 * 60 * 1000) / 1000);
+    const period2 = Math.floor(Date.now() / 1000);
+    
+    const res = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${config.etf}?period1=${period1}&period2=${period2}&interval=1d`,
+      {
+        next: { revalidate: 300 },
+        headers: { "User-Agent": "Mozilla/5.0" },
+      }
+    );
+    
+    if (!res.ok) throw new Error("Yahoo Finance metal history API failed");
     const data = await res.json();
     
-    const metalKey = symbol === "XAU" ? "gold" : symbol === "XAG" ? "silver" : symbol === "XPT" ? "platinum" : "palladium";
+    const timestamps = data.chart?.result?.[0]?.timestamp || [];
+    const prices = data.chart?.result?.[0]?.indicators?.quote?.[0]?.close || [];
     
-    // metals.live returns last 24h of data
-    return data.map((point: Record<string, number>) => ({
-      timestamp: point.timestamp * 1000,
-      price: point[metalKey] || 0,
-      date: new Date(point.timestamp * 1000).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
+    return timestamps.map((ts: number, i: number) => ({
+      timestamp: ts * 1000,
+      price: (prices[i] || 0) * config.factor,
+      date: new Date(ts * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
     })).filter((p: HistoryPoint) => p.price > 0);
   } catch (error) {
     console.error("Metal history fetch error:", error);
@@ -139,11 +154,11 @@ async function fetchCryptoDetails(symbol: string) {
   }
 }
 
-// Get additional market data for stocks
+// Get additional market data for stocks (using chart API meta)
 async function fetchStockDetails(symbol: string) {
   try {
     const res = await fetch(
-      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`,
+      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1y`,
       {
         next: { revalidate: 300 },
         headers: { "User-Agent": "Mozilla/5.0" },
@@ -152,21 +167,17 @@ async function fetchStockDetails(symbol: string) {
     
     if (!res.ok) return null;
     const data = await res.json();
-    const quote = data.quoteResponse?.result?.[0];
+    const meta = data.chart?.result?.[0]?.meta;
     
-    if (!quote) return null;
+    if (!meta) return null;
     
     return {
-      marketCap: quote.marketCap,
-      volume24h: quote.regularMarketVolume,
-      high24h: quote.regularMarketDayHigh,
-      low24h: quote.regularMarketDayLow,
-      fiftyTwoWeekHigh: quote.fiftyTwoWeekHigh,
-      fiftyTwoWeekLow: quote.fiftyTwoWeekLow,
-      peRatio: quote.trailingPE,
-      eps: quote.epsTrailingTwelveMonths,
-      dividendYield: quote.dividendYield,
-      previousClose: quote.regularMarketPreviousClose,
+      volume24h: meta.regularMarketVolume,
+      high24h: meta.regularMarketDayHigh,
+      low24h: meta.regularMarketDayLow,
+      fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh,
+      fiftyTwoWeekLow: meta.fiftyTwoWeekLow,
+      previousClose: meta.chartPreviousClose,
     };
   } catch (error) {
     console.error("Stock details fetch error:", error);
@@ -194,7 +205,7 @@ export async function GET(request: Request) {
       fetchStockDetails(symbol),
     ]);
   } else if (type === "metal") {
-    history = await fetchMetalHistory(symbol);
+    history = await fetchMetalHistory(symbol, days);
   }
 
   return NextResponse.json({
