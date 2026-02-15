@@ -90,6 +90,20 @@ export interface ResearchSource {
 
 export type UpgradeStatus = 'planned' | 'in_progress' | 'deployed' | 'rejected';
 
+export interface ProjectFile {
+  id: string;
+  project_id: string;
+  name: string;
+  file_path: string;
+  file_size: number | null;
+  mime_type: string | null;
+  uploaded_by: string | null;
+  description: string | null;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Upgrade {
   id: string;
   title: string;

@@ -6,7 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase, Project, Task, ActivityLog } from "@/lib/supabase";
+import { supabase, Project, Task, ActivityLog, ProjectFile } from "@/lib/supabase";
+import { FileUpload } from "@/components/files/FileUpload";
+import { FileList } from "@/components/files/FileList";
 import {
   ArrowLeft,
   ExternalLink,
@@ -23,6 +25,7 @@ import {
   Users,
   Calendar,
   Tag,
+  FolderOpen,
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -45,7 +48,7 @@ const priorityColors: Record<string, string> = {
 
 const columnLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   todo: { label: "To Do", icon: <Circle className="w-3 h-3" />, color: "text-zinc-400" },
-  "in-progress": { label: "In Progress", icon: <Clock className="w-3 h-3" />, color: "text-blue-400" },
+  "in_progress": { label: "In Progress", icon: <Clock className="w-3 h-3" />, color: "text-blue-400" },
   done: { label: "Done", icon: <CheckCircle2 className="w-3 h-3" />, color: "text-green-400" },
 };
 
@@ -77,6 +80,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
+  const [files, setFiles] = useState<ProjectFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("tasks");
 
@@ -130,6 +134,17 @@ export default function ProjectDetailPage() {
           });
           setActivities(filtered);
         }
+
+        // Fetch project files
+        const { data: fileData, error: fileError } = await supabase
+          .from("project_files")
+          .select("*")
+          .eq("project_id", projectId)
+          .order("created_at", { ascending: false });
+
+        if (!fileError && fileData) {
+          setFiles(fileData);
+        }
       }
     } catch (err) {
       console.error("Error fetching project:", err);
@@ -138,7 +153,7 @@ export default function ProjectDetailPage() {
     }
   }
 
-  async function updateTaskStatus(taskId: string, newStatus: string) {
+  async function updateTaskStatus(taskId: string, newStatus: Task['column_id']) {
     const { error } = await supabase
       .from("tasks")
       .update({ column_id: newStatus, updated_at: new Date().toISOString() })
@@ -177,7 +192,7 @@ export default function ProjectDetailPage() {
   }
 
   const todoTasks = tasks.filter((t) => t.column_id === "todo" && !t.archived);
-  const inProgressTasks = tasks.filter((t) => t.column_id === "in-progress" && !t.archived);
+  const inProgressTasks = tasks.filter((t) => t.column_id === "in_progress" && !t.archived);
   const doneTasks = tasks.filter((t) => t.column_id === "done" && !t.archived);
   const blockerTasks = tasks.filter((t) => t.labels?.includes("launch-blocker") && t.column_id !== "done");
 
@@ -307,6 +322,10 @@ export default function ProjectDetailPage() {
             <ListTodo className="w-4 h-4" />
             Tasks ({tasks.length})
           </TabsTrigger>
+          <TabsTrigger value="files" className="gap-2">
+            <FolderOpen className="w-4 h-4" />
+            Files ({files.length})
+          </TabsTrigger>
           <TabsTrigger value="activity" className="gap-2">
             <Activity className="w-4 h-4" />
             Activity ({activities.length})
@@ -371,6 +390,21 @@ export default function ProjectDetailPage() {
           </div>
         </TabsContent>
 
+        <TabsContent value="files" className="mt-4">
+          <Card className="bg-zinc-900/50 border-zinc-800">
+            <CardContent className="p-4 space-y-4">
+              <FileUpload
+                projectId={projectId}
+                onUploadComplete={(file) => setFiles((prev) => [file, ...prev])}
+              />
+              <FileList
+                files={files}
+                onDelete={(fileId) => setFiles((prev) => prev.filter((f) => f.id !== fileId))}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="activity" className="mt-4">
           <Card className="bg-zinc-900/50 border-zinc-800">
             <CardContent className="p-4">
@@ -425,7 +459,7 @@ function TaskCard({
   onStatusChange,
 }: {
   task: Task;
-  onStatusChange: (id: string, status: string) => void;
+  onStatusChange: (id: string, status: Task['column_id']) => void;
 }) {
   const isBlocker = task.labels?.includes("launch-blocker");
   const agentLabel = task.labels?.find((l) => l.startsWith("agent:"));
@@ -475,12 +509,12 @@ function TaskCard({
 
         {/* Quick status change */}
         <div className="flex gap-1">
-          {task.column_id !== "in-progress" && (
+          {task.column_id !== "in_progress" && (
             <Button
               size="sm"
               variant="ghost"
               className="h-6 px-2 text-xs text-blue-400 hover:text-blue-300"
-              onClick={() => onStatusChange(task.id, "in-progress")}
+              onClick={() => onStatusChange(task.id, "in_progress")}
             >
               Start
             </Button>
@@ -499,11 +533,4 @@ function TaskCard({
       </div>
     </div>
   );
-}
-
-function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
 }
