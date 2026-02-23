@@ -532,7 +532,7 @@ function AgentDetailView({
           </TabsTrigger>
           <TabsTrigger value="soul" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
-            SOUL
+            About
           </TabsTrigger>
           <TabsTrigger value="tasks" className="flex items-center gap-2">
             <ListTodo className="w-4 h-4" />
@@ -637,71 +637,175 @@ function AgentDetailView({
             </ScrollArea>
           </TabsContent>
 
-          {/* SOUL Tab */}
+          {/* SOUL Tab - Agent Overview */}
           <TabsContent value="soul" className="h-full m-0">
             <ScrollArea className="h-full">
-              <div className="p-6">
-                {soulLoading && (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              <div className="p-6 space-y-6">
+                {/* Who They Are */}
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                    <span className="text-2xl">{agent.avatar_emoji}</span>
+                    Who is {agent.display_name}?
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {agent.description || "No description available."}
+                  </p>
+                </div>
+
+                {/* Role & Capabilities */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-secondary/50 rounded-lg p-4">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Role</p>
+                    <p className="font-medium text-foreground capitalize">{agent.type || "Assistant"}</p>
                   </div>
-                )}
-                {soulError && (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <FileText className="w-12 h-12 text-zinc-700 mb-4" />
-                    <p className="text-muted-foreground text-sm">{soulError}</p>
-                    <p className="text-xs text-zinc-600 mt-2">
-                      Path: ~/.clawdbot/agents/{agent.name}/agent/SOUL.md
-                    </p>
+                  <div className="bg-secondary/50 rounded-lg p-4">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Status</p>
+                    <p className="font-medium text-foreground capitalize">{agent.status}</p>
                   </div>
-                )}
-                {soulContent && (
-                  <div className="prose prose-sm prose-invert max-w-none">
-                    <ReactMarkdown
-                      components={{
-                        h1: ({ children }) => (
-                          <h1 className="text-xl font-bold mb-4 text-foreground">
-                            {children}
-                          </h1>
-                        ),
-                        h2: ({ children }) => (
-                          <h2 className="text-lg font-semibold mt-6 mb-3 text-foreground">
-                            {children}
-                          </h2>
-                        ),
-                        h3: ({ children }) => (
-                          <h3 className="text-base font-medium mt-4 mb-2 text-foreground">
-                            {children}
-                          </h3>
-                        ),
-                        p: ({ children }) => (
-                          <p className="text-muted-foreground mb-3 leading-relaxed">
-                            {children}
-                          </p>
-                        ),
-                        ul: ({ children }) => (
-                          <ul className="list-disc list-inside space-y-1 text-muted-foreground mb-4">
-                            {children}
-                          </ul>
-                        ),
-                        li: ({ children }) => (
-                          <li className="text-sm">{children}</li>
-                        ),
-                        strong: ({ children }) => (
-                          <strong className="font-semibold text-foreground">
-                            {children}
-                          </strong>
-                        ),
-                        code: ({ children }) => (
-                          <code className="bg-secondary px-1.5 py-0.5 rounded text-xs font-mono text-accent">
-                            {children}
-                          </code>
-                        ),
-                        hr: () => <hr className="border-border my-6" />,
-                      }}
-                    >
-                      {soulContent}
-                    </ReactMarkdown>
+                </div>
+
+                {/* Key Responsibilities */}
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-3">Key Responsibilities</h4>
+                  <div className="space-y-2">
+                    {agent.name === 'lex' && (
+                      <>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Coordinate all agent activities</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Manage tasks and priorities</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Handle Telegram communication</span>
+                        </div>
+                      </>
+                    )}
+                    {agent.name === 'scout' && (
+                      <>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Monitor competitor activity</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Gather market intelligence</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Research potential clients</span>
+                        </div>
+                      </>
+                    )}
+                    {agent.name === 'coder' && (
+                      <>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Build and ship features</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Fix bugs and deploy code</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Next.js, React, Supabase projects</span>
+                        </div>
+                      </>
+                    )}
+                    {agent.name === 'voice' && (
+                      <>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Create marketing content</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Write LinkedIn posts</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Develop SEO strategy</span>
+                        </div>
+                      </>
+                    )}
+                    {agent.name === 'closer' && (
+                      <>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Handle sales outreach</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Draft proposals</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Manage deal pipeline</span>
+                        </div>
+                      </>
+                    )}
+                    {agent.name === 'numbers' && (
+                      <>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Financial analysis</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Pricing models</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>ROI calculations</span>
+                        </div>
+                      </>
+                    )}
+                    {agent.name === 'shield' && (
+                      <>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Review contracts</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Draft legal documents</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Ensure compliance</span>
+                        </div>
+                      </>
+                    )}
+                    {agent.name === 'runner' && (
+                      <>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Run QA tests</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Monitor systems</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CheckCircle2 className="w-4 h-4 text-accent" />
+                          <span>Handle deployments</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Config Info */}
+                {agent.config && Object.keys(agent.config).length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-3">Configuration</h4>
+                    <div className="bg-secondary/30 rounded-lg p-3 font-mono text-xs text-muted-foreground">
+                      <pre>{JSON.stringify(agent.config, null, 2)}</pre>
+                    </div>
                   </div>
                 )}
               </div>
