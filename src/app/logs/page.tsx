@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { supabase, Agent, ActivityLog, ActionCategory } from "@/lib/supabase";
+import { supabase, MCAgent, MCActivity, ActionCategory } from "@/lib/supabase";
 import {
   Search,
   Filter,
@@ -94,9 +94,20 @@ function LoadingSkeleton() {
   );
 }
 
+// Map mc_activities type to category for filtering
+const getActivityCategory = (type: string): ActionCategory => {
+  if (type.includes('tool')) return 'tool';
+  if (type.includes('message')) return 'message';
+  if (type.includes('file') || type.includes('edit')) return 'file';
+  if (type.includes('exec') || type.includes('command')) return 'exec';
+  if (type.includes('browser')) return 'browser';
+  if (type.includes('api') || type.includes('web')) return 'api';
+  return 'system';
+};
+
 export default function LogsPage() {
-  const [logs, setLogs] = useState<(ActivityLog & { agent?: Agent })[]>([]);
-  const [agents, setAgents] = useState<Agent[]>([]);
+  const [logs, setLogs] = useState<(MCActivity & { agent?: MCAgent })[]>([]);
+  const [agents, setAgents] = useState<MCAgent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -109,7 +120,7 @@ export default function LogsPage() {
 
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const pageSize = 50;
+  const pageSize = 100;
 
   const fetchLogs = useCallback(async (reset = false) => {
     try {
@@ -121,8 +132,8 @@ export default function LogsPage() {
       setLoading(true);
       
       let query = supabase
-        .from('activity_logs')
-        .select('*, agent:agents(*)')
+        .from('mc_activities')
+        .select('*, agent:mc_agents(*)')
         .order('timestamp', { ascending: false })
         .range(reset ? 0 : page * pageSize, (reset ? 0 : page) * pageSize + pageSize - 1);
 
@@ -130,9 +141,7 @@ export default function LogsPage() {
         query = query.eq('agent_id', selectedAgent);
       }
       
-      if (selectedCategory !== "all") {
-        query = query.eq('action_category', selectedCategory);
-      }
+      // Note: category filtering is done client-side since mc_activities uses 'type' not 'action_category'
 
       if (dateRange !== "all") {
         const now = new Date();
@@ -179,7 +188,7 @@ export default function LogsPage() {
   }, [selectedAgent, selectedCategory, dateRange]);
 
   async function fetchAgents() {
-    const { data } = await supabase.from('agents').select('*').order('label');
+    const { data } = await supabase.from('mc_agents').select('*').order('name');
     setAgents(data || []);
   }
 
@@ -189,33 +198,33 @@ export default function LogsPage() {
   }
 
   function exportLogs(format: 'csv' | 'json') {
-    const filteredLogs = logs.filter(log => {
+    const exportData = logs.filter(log => {
       if (searchQuery) {
         const search = searchQuery.toLowerCase();
         return (
-          log.action_type.toLowerCase().includes(search) ||
-          JSON.stringify(log.details).toLowerCase().includes(search) ||
-          (log.result?.toLowerCase().includes(search))
+          log.title.toLowerCase().includes(search) ||
+          log.type.toLowerCase().includes(search) ||
+          JSON.stringify(log.metadata).toLowerCase().includes(search) ||
+          (log.description?.toLowerCase().includes(search))
         );
       }
       return true;
     });
 
     if (format === 'json') {
-      const blob = new Blob([JSON.stringify(filteredLogs, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
       downloadBlob(blob, 'activity_logs.json');
     } else {
-      const headers = ['timestamp', 'agent', 'action_type', 'category', 'success', 'duration_ms', 'result'];
-      const rows = filteredLogs.map(log => [
+      const headers = ['timestamp', 'agent', 'title', 'type', 'status', 'description'];
+      const rows = exportData.map(log => [
         log.timestamp,
-        log.agent?.label || 'Unknown',
-        log.action_type,
-        log.action_category,
-        log.success ? 'true' : 'false',
-        log.duration_ms?.toString() || '',
-        log.result || '',
+        log.agent?.display_name || log.agent?.name || 'Unknown',
+        log.title,
+        log.type,
+        log.status,
+        log.description || '',
       ]);
-      const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+      const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
       const blob = new Blob([csv], { type: 'text/csv' });
       downloadBlob(blob, 'activity_logs.csv');
     }
@@ -231,18 +240,25 @@ export default function LogsPage() {
   }
 
   const filteredLogs = logs.filter(log => {
+    // Apply category filter
+    if (selectedCategory !== "all" && getActivityCategory(log.type) !== selectedCategory) {
+      return false;
+    }
+    // Apply search filter
     if (!searchQuery) return true;
     const search = searchQuery.toLowerCase();
     return (
-      log.action_type.toLowerCase().includes(search) ||
-      JSON.stringify(log.details).toLowerCase().includes(search) ||
-      (log.result?.toLowerCase().includes(search)) ||
-      (log.agent?.label.toLowerCase().includes(search))
+      log.title.toLowerCase().includes(search) ||
+      log.type.toLowerCase().includes(search) ||
+      JSON.stringify(log.metadata).toLowerCase().includes(search) ||
+      (log.description?.toLowerCase().includes(search)) ||
+      (log.agent?.display_name?.toLowerCase().includes(search)) ||
+      (log.agent?.name?.toLowerCase().includes(search))
     );
   });
 
   const categories: ActionCategory[] = ['tool', 'message', 'file', 'exec', 'browser', 'api', 'system'];
-  const successCount = filteredLogs.filter(l => l.success).length;
+  const successCount = filteredLogs.filter(l => l.status === 'completed').length;
   const successRate = filteredLogs.length > 0 ? Math.round((successCount / filteredLogs.length) * 100) : 0;
 
   if (loading && logs.length === 0) {
@@ -319,7 +335,7 @@ export default function LogsPage() {
                 >
                   <option value="all">All Agents</option>
                   {agents.map(agent => (
-                    <option key={agent.id} value={agent.id}>{agent.label}</option>
+                    <option key={agent.id} value={agent.id}>{agent.display_name || agent.name}</option>
                   ))}
                 </select>
               </div>
@@ -358,7 +374,7 @@ export default function LogsPage() {
             <div className="mt-3 flex flex-wrap gap-2">
               {selectedAgent !== "all" && (
                 <Badge className="bg-secondary text-zinc-300 gap-1 text-xs">
-                  Agent: {agents.find(a => a.id === selectedAgent)?.label}
+                  Agent: {agents.find(a => a.id === selectedAgent)?.display_name || agents.find(a => a.id === selectedAgent)?.name}
                   <X className="w-3 h-3 cursor-pointer" onClick={() => setSelectedAgent("all")} />
                 </Badge>
               )}
@@ -409,11 +425,9 @@ export default function LogsPage() {
         </Card>
         <Card className="bg-card border-border animate-fade-in stagger-5 opacity-0">
           <CardContent className="p-3">
-            <p className="text-muted-foreground text-xs uppercase tracking-wider">Avg Duration</p>
+            <p className="text-muted-foreground text-xs uppercase tracking-wider">Tool Calls</p>
             <p className="text-xl font-bold font-terminal mt-0.5">
-              {filteredLogs.length > 0 
-                ? Math.round(filteredLogs.reduce((acc, l) => acc + (l.duration_ms || 0), 0) / filteredLogs.filter(l => l.duration_ms).length || 0)
-                : 0}ms
+              {filteredLogs.filter(l => l.type === 'tool_call').length}
             </p>
           </CardContent>
         </Card>
@@ -443,59 +457,67 @@ export default function LogsPage() {
                   style={{ animationDelay: `${Math.min(index * 0.02, 0.5)}s` }}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg flex-shrink-0 ${categoryColors[log.action_category]}`}>
-                      {categoryIcons[log.action_category]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm font-terminal">{log.action_type}</span>
-                        <Badge className={`${categoryColors[log.action_category]} text-xs`} variant="outline">
-                          {log.action_category}
-                        </Badge>
-                        {log.success ? (
-                          <span className="flex items-center gap-1 text-xs text-accent">
-                            <CheckCircle className="w-3 h-3" />
-                            <span className="hidden sm:inline">Success</span>
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-xs text-red-400">
-                            <XCircle className="w-3 h-3" />
-                            <span className="hidden sm:inline">Failed</span>
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Bot className="w-3 h-3" />
-                          {log.agent?.label || 'Unknown Agent'}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          <TimeAgo date={log.timestamp} />
-                        </span>
-                        {log.duration_ms && (
-                          <span className="font-terminal">{log.duration_ms}ms</span>
-                        )}
-                      </div>
-                      
-                      {expandedLog === log.id && (
-                        <div className="mt-3 p-3 bg-secondary rounded-lg text-sm border border-border/50 animate-fade-in-scale">
-                          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Details</p>
-                          <pre className="text-xs overflow-x-auto whitespace-pre-wrap text-muted-foreground font-terminal bg-card/50 p-2 rounded">
-                            {JSON.stringify(log.details, null, 2)}
-                          </pre>
-                          {log.result && (
-                            <>
-                              <p className="text-xs text-muted-foreground mt-3 mb-2 uppercase tracking-wider">Result</p>
-                              <p className="text-muted-foreground text-sm font-terminal">{log.result}</p>
-                            </>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-3 font-terminal">
-                            {new Date(log.timestamp).toLocaleString()}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    {(() => {
+                      const category = getActivityCategory(log.type);
+                      const isSuccess = log.status === 'completed' || log.status === 'pending';
+                      return (
+                        <>
+                          <div className={`p-2 rounded-lg flex-shrink-0 ${categoryColors[category]}`}>
+                            {categoryIcons[category]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-sm font-terminal">{log.title}</span>
+                              <Badge className={`${categoryColors[category]} text-xs`} variant="outline">
+                                {log.type}
+                              </Badge>
+                              {isSuccess ? (
+                                <span className="flex items-center gap-1 text-xs text-accent">
+                                  <CheckCircle className="w-3 h-3" />
+                                  <span className="hidden sm:inline">{log.status}</span>
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-xs text-red-400">
+                                  <XCircle className="w-3 h-3" />
+                                  <span className="hidden sm:inline">{log.status}</span>
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Bot className="w-3 h-3" />
+                                {log.agent?.display_name || log.agent?.name || 'System'}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                <TimeAgo date={log.timestamp} />
+                              </span>
+                              {log.description && (
+                                <span className="truncate max-w-xs">{log.description}</span>
+                              )}
+                            </div>
+                            
+                            {expandedLog === log.id && (
+                              <div className="mt-3 p-3 bg-secondary rounded-lg text-sm border border-border/50 animate-fade-in-scale">
+                                <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wider">Details</p>
+                                <pre className="text-xs overflow-x-auto whitespace-pre-wrap text-muted-foreground font-terminal bg-card/50 p-2 rounded">
+                                  {JSON.stringify(log.metadata, null, 2)}
+                                </pre>
+                                {log.description && (
+                                  <>
+                                    <p className="text-xs text-muted-foreground mt-3 mb-2 uppercase tracking-wider">Description</p>
+                                    <p className="text-muted-foreground text-sm font-terminal">{log.description}</p>
+                                  </>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-3 font-terminal">
+                                  {new Date(log.timestamp).toLocaleString()}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               ))}

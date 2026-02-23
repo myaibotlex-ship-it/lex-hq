@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { supabase, Agent, ActivityLog, Task, Project, Call } from "@/lib/supabase";
+import { supabase, MCAgent, MCActivity, Task, Project, Call } from "@/lib/supabase";
 import { NewTaskModal } from "@/components/modals/new-task-modal";
 import { StartCallModal } from "@/components/modals/start-call-modal";
 import { SystemStatus } from "@/components/system-status";
@@ -92,8 +92,8 @@ function LoadingSkeleton() {
 
 export default function MissionControl() {
   const [loading, setLoading] = useState(true);
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [recentLogs, setRecentLogs] = useState<(ActivityLog & { agent?: Agent })[]>([]);
+  const [agents, setAgents] = useState<MCAgent[]>([]);
+  const [recentLogs, setRecentLogs] = useState<(MCActivity & { agent?: MCAgent })[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [calls, setCalls] = useState<Call[]>([]);
@@ -117,12 +117,12 @@ export default function MissionControl() {
       today.setHours(0, 0, 0, 0);
 
       const [agentsRes, logsRes, tasksRes, projectsRes, callsRes, todayLogsRes] = await Promise.all([
-        supabase.from('agents').select('*').order('last_active_at', { ascending: false }),
-        supabase.from('activity_logs').select('*, agent:agents(*)').order('timestamp', { ascending: false }).limit(20),
+        supabase.from('mc_agents').select('*').order('last_seen_at', { ascending: false, nullsFirst: false }),
+        supabase.from('mc_activities').select('*, agent:mc_agents(*)').order('timestamp', { ascending: false }).limit(50),
         supabase.from('tasks').select('*').eq('archived', false),
         supabase.from('projects').select('*').eq('status', 'active'),
         supabase.from('calls').select('*').order('created_at', { ascending: false }).limit(10),
-        supabase.from('activity_logs').select('id', { count: 'exact' }).gte('timestamp', today.toISOString()),
+        supabase.from('mc_activities').select('id', { count: 'exact' }).gte('timestamp', today.toISOString()),
       ]);
 
       setAgents(agentsRes.data || []);
@@ -142,7 +142,7 @@ export default function MissionControl() {
     fetchData();
     // Refresh agents every 10 seconds
     const agentInterval = setInterval(async () => {
-      const { data } = await supabase.from('agents').select('*').order('last_active_at', { ascending: false });
+      const { data } = await supabase.from('mc_agents').select('*').order('last_seen_at', { ascending: false, nullsFirst: false });
       if (data) setAgents(data);
     }, 10000);
     
@@ -161,9 +161,20 @@ export default function MissionControl() {
   const completedTasks = tasks.filter(t => t.column_id === 'done').length;
   const successRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
 
+  // Map mc_activities type to category for filtering
+  const getActivityCategory = (type: string): string => {
+    if (type.includes('tool')) return 'tool';
+    if (type.includes('message')) return 'message';
+    if (type.includes('file') || type.includes('edit')) return 'file';
+    if (type.includes('exec') || type.includes('command')) return 'exec';
+    if (type.includes('browser')) return 'browser';
+    if (type.includes('api') || type.includes('web')) return 'api';
+    return 'system';
+  };
+
   const filteredLogs = activityFilter === "all" 
     ? recentLogs 
-    : recentLogs.filter(log => log.action_category === activityFilter);
+    : recentLogs.filter(log => getActivityCategory(log.type) === activityFilter);
 
   if (loading) {
     return <LoadingSkeleton />;
@@ -261,21 +272,18 @@ export default function MissionControl() {
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4 space-y-2">
-            {agents.slice(0, 4).map((agent, index) => (
+            {agents.slice(0, 6).map((agent, index) => (
               <div 
                 key={agent.id} 
                 className="flex items-center justify-between p-3 bg-secondary/60 rounded-lg border border-border/50 hover:border-border transition-all duration-200 hover:bg-muted group"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className={`status-dot flex-shrink-0 ${
-                    agent.status === 'active' ? 'status-dot-active' : 
-                    agent.status === 'idle' ? 'status-dot-idle' : 'status-dot-complete'
-                  }`} />
+                  <span className="text-xl flex-shrink-0">{agent.avatar_emoji || '🤖'}</span>
                   <div className="min-w-0">
-                    <span className="font-medium text-sm">{agent.label}</span>
-                    {agent.current_task && (
-                      <p className="text-xs text-muted-foreground truncate max-w-[200px] font-terminal">{agent.current_task}</p>
+                    <span className="font-medium text-sm">{agent.display_name || agent.name}</span>
+                    {agent.description && (
+                      <p className="text-xs text-muted-foreground truncate max-w-[200px]">{agent.description}</p>
                     )}
                   </div>
                 </div>
@@ -287,9 +295,11 @@ export default function MissionControl() {
                   }`}>
                     {agent.status}
                   </Badge>
-                  <span className="text-xs text-muted-foreground hidden sm:inline">
-                    <TimeAgo date={agent.last_active_at} />
-                  </span>
+                  {agent.last_seen_at && (
+                    <span className="text-xs text-muted-foreground hidden sm:inline">
+                      <TimeAgo date={agent.last_seen_at} />
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -412,25 +422,28 @@ export default function MissionControl() {
           </CardHeader>
           <CardContent className="px-4 pb-4 activity-stream max-h-72 overflow-y-auto">
             <div className="space-y-1">
-              {filteredLogs.slice(0, 8).map((log) => (
+              {filteredLogs.slice(0, 8).map((log) => {
+                const isSuccess = log.status === 'completed' || log.status === 'pending';
+                const category = getActivityCategory(log.type);
+                return (
                 <div key={log.id} className="flex items-center gap-3 p-2 rounded-lg log-entry group">
                   <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${
-                    log.success ? 'bg-accent/10' : 'bg-red-500/10'
+                    isSuccess ? 'bg-accent/10' : 'bg-red-500/10'
                   }`}>
-                    {categoryIcons[log.action_category] || <Activity className="w-3.5 h-3.5 text-muted-foreground" />}
+                    {categoryIcons[category] || <Activity className="w-3.5 h-3.5 text-muted-foreground" />}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm truncate font-terminal">{log.action_type}</p>
-                    <p className="text-muted-foreground text-xs">{log.agent?.label || 'System'}</p>
+                    <p className="text-sm truncate font-terminal">{log.title}</p>
+                    <p className="text-muted-foreground text-xs">{log.agent?.display_name || log.agent?.name || 'System'}</p>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className={`w-1.5 h-1.5 rounded-full ${log.success ? 'bg-accent' : 'bg-red-500'}`} />
+                    <span className={`w-1.5 h-1.5 rounded-full ${isSuccess ? 'bg-accent' : 'bg-red-500'}`} />
                     <span className="text-muted-foreground text-xs">
                       <TimeAgo date={log.timestamp} />
                     </span>
                   </div>
                 </div>
-              ))}
+              );})}
             </div>
             {filteredLogs.length === 0 && (
               <div className="empty-state py-6">

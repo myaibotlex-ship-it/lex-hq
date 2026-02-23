@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { PWARegister } from "@/components/pwa-register";
+import { AppShell } from "@/components/app-shell";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -48,7 +49,9 @@ export default function RootLayout({
         <div className="flex h-screen">
           <Sidebar />
           <main className="flex-1 overflow-auto md:ml-0">
-            {children}
+            <AppShell>
+              {children}
+            </AppShell>
           </main>
         </div>
       </body>

@@ -45,6 +45,7 @@ export interface Call {
   created_at: string;
 }
 
+// Legacy Agent interface (old table)
 export interface Agent {
   id: string;
   label: string;
@@ -58,8 +59,25 @@ export interface Agent {
   last_active_at: string;
 }
 
-export type ActionCategory = 'tool' | 'message' | 'file' | 'exec' | 'browser' | 'api' | 'system';
+// MC Agent interface (current table - mc_agents)
+export interface MCAgent {
+  id: string;
+  name: string;
+  display_name: string;
+  type: string;
+  status: 'active' | 'idle' | 'offline';
+  avatar_emoji: string | null;
+  color: string | null;
+  description: string | null;
+  last_seen_at: string | null;
+  config: Record<string, unknown> | null;
+  created_at: string;
+}
 
+export type ActionCategory = 'tool' | 'message' | 'file' | 'exec' | 'browser' | 'api' | 'system';
+export type ActivityType = 'tool_call' | 'tool_result' | 'message_received' | 'task' | 'health_check' | 'error' | 'research' | 'file_edit' | 'message' | 'cron';
+
+// Legacy ActivityLog interface (old table)
 export interface ActivityLog {
   id: string;
   agent_id: string | null;
@@ -73,6 +91,21 @@ export interface ActivityLog {
   created_at: string;
   // Joined field
   agent?: Agent;
+}
+
+// MC Activity interface (current table - mc_activities)
+export interface MCActivity {
+  id: string;
+  timestamp: string;
+  type: ActivityType | string;
+  title: string;
+  description: string | null;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'error';
+  metadata: Record<string, unknown> | null;
+  source: string | null;
+  agent_id: string | null;
+  // Joined field
+  agent?: MCAgent;
 }
 
 export type SourceType = 'tweet' | 'article' | 'blog' | 'video';
