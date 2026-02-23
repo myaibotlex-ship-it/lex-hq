@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const GATEWAY_URL = process.env.CLAWDBOT_GATEWAY_URL || "http://localhost:3001";
-const SESSION_KEY = process.env.CLAWDBOT_SESSION_KEY || "telegram:1069873058";
+const GATEWAY_URL = process.env.CLAWDBOT_GATEWAY_URL || "http://localhost:18789";
+const GATEWAY_TOKEN = process.env.CLAWDBOT_GATEWAY_TOKEN || "";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,17 +15,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Forward to Clawdbot Gateway
-    const gatewayUrl = `${GATEWAY_URL}/v1/sessions/${encodeURIComponent(SESSION_KEY)}/messages`;
+    // Use OpenAI-compatible chat completions endpoint
+    const gatewayUrl = `${GATEWAY_URL}/v1/chat/completions`;
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    
+    if (GATEWAY_TOKEN) {
+      headers["Authorization"] = `Bearer ${GATEWAY_TOKEN}`;
+    }
 
     const response = await fetch(gatewayUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({
-        content: message,
-        source: "bridge-web",
+        model: "clawdbot:main",
+        messages: [
+          {
+            role: "user",
+            content: message,
+          },
+        ],
+        user: "bridge-web-dan",
       }),
     });
 
@@ -33,9 +45,16 @@ export async function POST(request: NextRequest) {
       const errorText = await response.text();
       console.error("[Chat API] Gateway error:", response.status, errorText);
       
+      if (response.status === 401) {
+        return NextResponse.json(
+          { error: "Unauthorized. Check CLAWDBOT_GATEWAY_TOKEN." },
+          { status: 502 }
+        );
+      }
+      
       if (response.status === 404) {
         return NextResponse.json(
-          { error: "Session not found. Make sure the Gateway is running." },
+          { error: "Chat endpoint not enabled. Enable gateway.http.endpoints.chatCompletions." },
           { status: 502 }
         );
       }
@@ -48,9 +67,11 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json();
     
-    // The gateway returns the assistant's response
-    // Adjust based on actual gateway response format
-    const assistantResponse = data.content || data.response || data.message || JSON.stringify(data);
+    // OpenAI format: data.choices[0].message.content
+    const assistantResponse = data.choices?.[0]?.message?.content || 
+                              data.content || 
+                              data.response || 
+                              "No response received.";
 
     return NextResponse.json({
       response: assistantResponse,
@@ -62,7 +83,7 @@ export async function POST(request: NextRequest) {
     // Check if it's a connection error
     if (error instanceof TypeError && error.message.includes("fetch")) {
       return NextResponse.json(
-        { error: "Cannot connect to Gateway. Is it running on localhost:3001?" },
+        { error: "Cannot connect to Gateway. Is it running?" },
         { status: 503 }
       );
     }
