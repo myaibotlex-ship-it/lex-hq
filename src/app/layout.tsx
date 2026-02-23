@@ -4,6 +4,7 @@ import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { PWARegister } from "@/components/pwa-register";
 import { AppShell } from "@/components/app-shell";
+import { Chat } from "@/components/Chat";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -54,6 +55,7 @@ export default function RootLayout({
             </AppShell>
           </main>
         </div>
+        <Chat />
       </body>
     </html>
   );
