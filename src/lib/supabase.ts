@@ -16,6 +16,8 @@ export interface Task {
   due_date: string | null;
   subtasks: { text: string; completed: boolean }[];
   labels: string[];
+  notes: string | null;
+  assignees: string[];
   archived: boolean;
   created_at: string;
   updated_at: string;
