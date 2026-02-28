@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
   CheckCircle,
   Play,
   Pause,
+  ChevronRight,
 } from "lucide-react";
 
 type TabId = "dashboard" | "opportunities" | "trades" | "watchlist" | "agents";
@@ -346,9 +348,10 @@ export default function PredictionsPage() {
             <CardContent>
               <div className="space-y-3">
                 {opportunities.slice(0, 4).map((opp) => (
-                  <div
+                  <Link
                     key={opp.ticker}
-                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border hover:border-primary/50 transition-colors"
+                    href={`/predictions/${opp.ticker}`}
+                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border hover:border-primary/50 transition-colors group cursor-pointer"
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -359,15 +362,18 @@ export default function PredictionsPage() {
                       </div>
                       <p className="text-sm text-muted-foreground truncate">{opp.title}</p>
                     </div>
-                    <div className="text-right ml-4">
-                      <div className="font-mono font-bold">
-                        {opp.yesBid}-{opp.yesAsk}¢
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="font-mono font-bold">
+                          {opp.yesBid}-{opp.yesAsk}¢
+                        </div>
+                        <div className="text-xs text-yellow-500">
+                          {opp.spread}¢ spread
+                        </div>
                       </div>
-                      <div className="text-xs text-yellow-500">
-                        {opp.spread}¢ spread
-                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </CardContent>
@@ -391,41 +397,43 @@ export default function PredictionsPage() {
 
           <div className="space-y-3">
             {opportunities.map((opp) => (
-              <Card key={opp.ticker} className="hover:border-primary/50 transition-colors">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono font-semibold">{opp.ticker}</span>
-                        <Badge variant={opp.type === "SPREAD" ? "default" : "secondary"}>
-                          {opp.type}
-                        </Badge>
-                        <Badge variant="outline">{opp.category}</Badge>
+              <Link key={opp.ticker} href={`/predictions/${opp.ticker}`}>
+                <Card className="hover:border-primary/50 transition-colors cursor-pointer group">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-mono font-semibold">{opp.ticker}</span>
+                          <Badge variant={opp.type === "SPREAD" ? "default" : "secondary"}>
+                            {opp.type}
+                          </Badge>
+                          <Badge variant="outline">{opp.category}</Badge>
+                        </div>
+                        <p className="text-sm mb-2">{opp.title}</p>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span>
+                            <span className="text-muted-foreground">Spread:</span>{" "}
+                            <span className="text-yellow-500 font-mono">{opp.spread}¢</span>
+                          </span>
+                          <span>
+                            <span className="text-muted-foreground">Volume:</span>{" "}
+                            <span className="font-mono">${opp.volume.toLocaleString()}</span>
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-sm mb-2">{opp.title}</p>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span>
-                          <span className="text-muted-foreground">Spread:</span>{" "}
-                          <span className="text-yellow-500 font-mono">{opp.spread}¢</span>
-                        </span>
-                        <span>
-                          <span className="text-muted-foreground">Volume:</span>{" "}
-                          <span className="font-mono">${opp.volume.toLocaleString()}</span>
-                        </span>
+                      <div className="flex items-center gap-3">
+                        <div className="text-right">
+                          <div className="font-mono text-xl font-bold">
+                            {opp.yesBid}-{opp.yesAsk}¢
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Click for details</p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-mono text-xl font-bold">
-                        {opp.yesBid}-{opp.yesAsk}¢
-                      </div>
-                      <div className="flex gap-2 mt-2">
-                        <Button size="sm" variant="outline">Analyze</Button>
-                        <Button size="sm">Trade</Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
@@ -487,18 +495,25 @@ export default function PredictionsPage() {
                 {watchlist.map((ticker) => {
                   const opp = opportunities.find(o => o.ticker === ticker);
                   return (
-                    <div key={ticker} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border">
+                    <Link
+                      key={ticker}
+                      href={`/predictions/${ticker}`}
+                      className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border hover:border-primary/50 transition-colors group cursor-pointer"
+                    >
                       <div>
                         <span className="font-mono font-semibold">{ticker}</span>
                         {opp && <p className="text-sm text-muted-foreground">{opp.title}</p>}
                       </div>
-                      {opp && (
-                        <div className="text-right">
-                          <div className="font-mono">{opp.yesBid}-{opp.yesAsk}¢</div>
-                          <div className="text-xs text-yellow-500">{opp.spread}¢ spread</div>
-                        </div>
-                      )}
-                    </div>
+                      <div className="flex items-center gap-3">
+                        {opp && (
+                          <div className="text-right">
+                            <div className="font-mono">{opp.yesBid}-{opp.yesAsk}¢</div>
+                            <div className="text-xs text-yellow-500">{opp.spread}¢ spread</div>
+                          </div>
+                        )}
+                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                    </Link>
                   );
                 })}
               </div>

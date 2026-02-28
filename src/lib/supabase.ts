@@ -134,6 +134,20 @@ export interface WatchlistItem {
   created_at: string;
 }
 
+export interface Position {
+  id: string;
+  symbol: string;
+  asset_type: 'metal' | 'crypto' | 'stock';
+  display_name: string;
+  quantity: number;
+  unit: string;
+  cost_basis: number;
+  purchase_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ProjectFile {
   id: string;
   project_id: string;
