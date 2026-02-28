@@ -1,50 +1,67 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 
-const KALSHI_API_KEY_ID = process.env.KALSHI_API_KEY_ID!;
-const KALSHI_PRIVATE_KEY = process.env.KALSHI_PRIVATE_KEY!;
+const KALSHI_API = 'https://api.elections.kalshi.com';
+const API_KEY_ID = process.env.KALSHI_API_KEY_ID || '';
+const PRIVATE_KEY = process.env.KALSHI_PRIVATE_KEY || '';
+const CLOCK_OFFSET = parseInt(process.env.KALSHI_CLOCK_OFFSET || '-3560');
 
-function signRequest(method: string, path: string, timestamp: string): string {
-  const message = timestamp + method + path;
+function createSignature(timestamp: string, method: string, path: string): string {
+  const pathWithoutQuery = path.split('?')[0];
+  const message = `${timestamp}${method}${pathWithoutQuery}`;
+  
   const sign = crypto.createSign('RSA-SHA256');
   sign.update(message);
-  return sign.sign(KALSHI_PRIVATE_KEY, 'base64');
+  sign.end();
+  
+  const signature = sign.sign({
+    key: PRIVATE_KEY,
+    padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
+    saltLength: crypto.constants.RSA_PSS_SALTLEN_DIGEST,
+  });
+  
+  return signature.toString('base64');
+}
+
+function getHeaders(method: string, path: string): Record<string, string> {
+  const timestamp = String(Math.floor((Date.now() / 1000 + CLOCK_OFFSET) * 1000));
+  const signature = createSignature(timestamp, method, path);
+  
+  return {
+    'KALSHI-ACCESS-KEY': API_KEY_ID,
+    'KALSHI-ACCESS-SIGNATURE': signature,
+    'KALSHI-ACCESS-TIMESTAMP': timestamp,
+    'Content-Type': 'application/json',
+  };
 }
 
 async function kalshiFetch(path: string) {
-  const timestamp = Math.floor(Date.now() / 1000).toString();
-  const signature = signRequest('GET', path, timestamp);
-  
-  const res = await fetch(`https://api.kalshi.com${path}`, {
-    headers: {
-      'KALSHI-ACCESS-KEY': KALSHI_API_KEY_ID,
-      'KALSHI-ACCESS-SIGNATURE': signature,
-      'KALSHI-ACCESS-TIMESTAMP': timestamp,
-    },
-    cache: 'no-store'
-  });
-  
+  const url = `${KALSHI_API}${path}`;
+  const headers = getHeaders('GET', path);
+  const res = await fetch(url, { headers, cache: 'no-store' });
   return res.json();
 }
 
 export async function GET() {
   try {
-    // Get BTC bracket markets - search for KXBTC series
-    const markets = await kalshiFetch('/trade-api/v2/markets?status=open&limit=200');
+    // Search for BTC/crypto related markets
+    const marketsPath = '/trade-api/v2/markets?status=open&limit=200';
+    const markets = await kalshiFetch(marketsPath);
     
     // Filter for BTC-related markets
     const btcMarkets = markets.markets?.filter((m: any) => 
-      m.ticker?.includes('BTC') || 
+      m.ticker?.toUpperCase().includes('BTC') || 
+      m.ticker?.toUpperCase().includes('BITCOIN') ||
       m.title?.toLowerCase().includes('bitcoin') ||
-      m.event_ticker?.includes('BTC')
+      m.event_ticker?.toUpperCase().includes('BTC')
     ) || [];
     
-    // Also fetch current Coinbase price for comparison
+    // Fetch Coinbase price for comparison
     const coinbaseRes = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');
     const coinbaseData = await coinbaseRes.json();
     const btcPrice = parseFloat(coinbaseData.data.amount);
     
-    // Calculate which bracket BTC is in
+    // Calculate current bracket
     const bracketSize = 250;
     const currentBracket = Math.floor(btcPrice / bracketSize) * bracketSize;
     
@@ -53,6 +70,8 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       btcPrice,
       currentBracket: `$${currentBracket.toLocaleString()}-${(currentBracket + bracketSize).toLocaleString()}`,
+      distToLower: btcPrice - currentBracket,
+      distToUpper: (currentBracket + bracketSize) - btcPrice,
       btcMarkets: btcMarkets.map((m: any) => ({
         ticker: m.ticker,
         title: m.title,
@@ -65,9 +84,10 @@ export async function GET() {
         close_time: m.close_time
       })),
       marketCount: btcMarkets.length,
-      allMarketsCount: markets.markets?.length || 0
+      totalMarketsScanned: markets.markets?.length || 0
     });
   } catch (error: any) {
+    console.error('BTC brackets API error:', error);
     return NextResponse.json({ 
       success: false, 
       error: error.message 
