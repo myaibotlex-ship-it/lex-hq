@@ -23,7 +23,6 @@ import {
   WifiOff,
   Activity,
   TrendingUp,
-  Zap,
 } from "lucide-react";
 
 const navItems = [
@@ -36,7 +35,6 @@ const navItems = [
   { href: "/projects", icon: FolderKanban, label: "Projects" },
   { href: "/predictions", icon: TrendingUp, label: "Predictions" },
   { href: "/investing", icon: Activity, label: "Investing" },
-  { href: "/trades", icon: Zap, label: "Trades" },
   { href: "/calls", icon: Phone, label: "Calls" },
   { href: "/memory", icon: Brain, label: "Memory" },
 ];

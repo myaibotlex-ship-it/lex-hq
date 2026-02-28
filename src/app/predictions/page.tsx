@@ -122,6 +122,22 @@ export default function PredictionsPage() {
         setPortfolioValue(balanceData.portfolio_value / 100);
       }
       
+      // Fetch trades from BTC auto-trader
+      const tradesRes = await fetch('/api/kalshi/trade');
+      const tradesData = await tradesRes.json();
+      if (tradesData.success && tradesData.trades) {
+        setTrades(tradesData.trades.map((t: any) => ({
+          id: t.id,
+          ticker: t.ticker,
+          side: t.side,
+          contracts: t.count,
+          price: t.price,
+          status: t.status,
+          timestamp: t.created_at,
+          pnl: t.pnl
+        })));
+      }
+      
       setLastUpdate(new Date());
     } catch (err) {
       console.error("Failed to fetch data:", err);
@@ -439,37 +455,84 @@ export default function PredictionsPage() {
         </div>
       )}
 
-      {/* Trades Tab */}
+      {/* Trades Tab - BTC Auto-Trader */}
       {activeTab === "trades" && (
         <div className="space-y-4">
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="pt-4">
+                <div className="text-sm text-muted-foreground">Total Trades</div>
+                <p className="text-2xl font-bold">{trades.length}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="text-sm text-muted-foreground">Volume</div>
+                <p className="text-2xl font-bold">
+                  ${(trades.reduce((sum, t) => sum + (t.contracts * (t.price || 0)), 0) / 100).toFixed(2)}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="text-sm text-muted-foreground">P&L</div>
+                <p className={`text-2xl font-bold ${trades.reduce((sum, t) => sum + (t.pnl || 0), 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  ${trades.reduce((sum, t) => sum + (t.pnl || 0), 0).toFixed(2)}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="text-sm text-muted-foreground">Win Rate</div>
+                <p className="text-2xl font-bold">
+                  {trades.filter(t => t.pnl !== undefined && t.pnl !== null).length > 0 
+                    ? `${((trades.filter(t => (t.pnl || 0) > 0).length / trades.filter(t => t.pnl !== undefined && t.pnl !== null).length) * 100).toFixed(0)}%`
+                    : '—'}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Trade History</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Activity className="w-5 h-5" />
+                BTC Auto-Trader History
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {trades.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
-                  <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                  <Bot className="w-12 h-12 mx-auto mb-4 opacity-30" />
                   <p>No trades yet</p>
-                  <p className="text-sm mt-2">Place your first trade to see it here</p>
+                  <p className="text-sm mt-2">The auto-trader will execute when it finds opportunities</p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {trades.map((trade) => (
                     <div key={trade.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div>
-                        <span className="font-mono">{trade.ticker}</span>
-                        <Badge className="ml-2" variant={trade.side === "yes" ? "default" : "secondary"}>
+                      <div className="flex items-center gap-3">
+                        <Badge variant={trade.side === "yes" ? "default" : "secondary"}>
                           {trade.side.toUpperCase()}
                         </Badge>
+                        <div>
+                          <span className="font-mono text-sm">{trade.ticker.split('-').slice(-1)[0]}</span>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(trade.timestamp).toLocaleString()}
+                          </div>
+                        </div>
                       </div>
                       <div className="text-right">
-                        <span className="font-mono">{trade.contracts}x @ {trade.price}¢</span>
-                        {trade.pnl !== undefined && (
-                          <span className={`ml-2 ${trade.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                            {trade.pnl >= 0 ? '+' : ''}{trade.pnl}¢
-                          </span>
-                        )}
+                        <div className="font-mono">{trade.contracts}x @ {trade.price}¢</div>
+                        <div className="text-xs">
+                          <Badge variant="outline" className="text-xs">{trade.status}</Badge>
+                          {trade.pnl !== undefined && trade.pnl !== null && (
+                            <span className={`ml-2 font-mono ${trade.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              {trade.pnl >= 0 ? '+' : ''}${trade.pnl.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
