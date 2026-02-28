@@ -5,12 +5,34 @@ import { createClient } from '@supabase/supabase-js';
 const KALSHI_API = 'https://api.elections.kalshi.com';
 const API_KEY_ID = process.env.KALSHI_API_KEY_ID || '';
 const PRIVATE_KEY = process.env.KALSHI_PRIVATE_KEY || '';
-const CLOCK_OFFSET = parseInt(process.env.KALSHI_CLOCK_OFFSET || '-3560');
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+// Auto-calibrate clock offset
+let clockOffset = 0;
+let lastCalibration = 0;
+
+async function calibrateClock() {
+  if (Date.now() - lastCalibration < 300000 && clockOffset !== 0) {
+    return;
+  }
+  
+  try {
+    const res = await fetch(`${KALSHI_API}/trade-api/v2/exchange/status`);
+    const serverTime = res.headers.get('date');
+    if (serverTime) {
+      const serverMs = new Date(serverTime).getTime();
+      const localMs = Date.now();
+      clockOffset = Math.floor((serverMs - localMs) / 1000);
+      lastCalibration = Date.now();
+    }
+  } catch (e) {
+    clockOffset = 0;
+  }
+}
 
 function createSignature(timestamp: string, method: string, path: string): string {
   const pathWithoutQuery = path.split('?')[0];
@@ -30,7 +52,7 @@ function createSignature(timestamp: string, method: string, path: string): strin
 }
 
 function getHeaders(method: string, path: string): Record<string, string> {
-  const timestamp = String(Math.floor((Date.now() / 1000 + CLOCK_OFFSET) * 1000));
+  const timestamp = String(Math.floor((Date.now() / 1000 + clockOffset) * 1000));
   const signature = createSignature(timestamp, method, path);
   
   return {
@@ -44,6 +66,8 @@ function getHeaders(method: string, path: string): Record<string, string> {
 // POST: Execute a trade
 export async function POST(request: NextRequest) {
   try {
+    await calibrateClock();
+    
     const body = await request.json();
     const { ticker, side, count, price, type = 'limit', reason, btcPrice } = body;
     
@@ -54,7 +78,7 @@ export async function POST(request: NextRequest) {
     const path = '/trade-api/v2/portfolio/orders';
     const orderData: any = {
       ticker,
-      side, // 'yes' or 'no'
+      side,
       count,
       type,
       action: 'buy',

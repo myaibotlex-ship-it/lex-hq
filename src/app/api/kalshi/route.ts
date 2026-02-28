@@ -5,8 +5,31 @@ const KALSHI_API = 'https://api.elections.kalshi.com';
 const API_KEY_ID = process.env.KALSHI_API_KEY_ID || '';
 const PRIVATE_KEY = process.env.KALSHI_PRIVATE_KEY || '';
 
-// Clock offset to compensate for server time drift (in seconds)
-const CLOCK_OFFSET = parseInt(process.env.KALSHI_CLOCK_OFFSET || '-3560');
+// Auto-calibrate clock offset
+let clockOffset = 0;
+let lastCalibration = 0;
+
+async function calibrateClock() {
+  // Only calibrate every 5 minutes
+  if (Date.now() - lastCalibration < 300000 && clockOffset !== 0) {
+    return;
+  }
+  
+  try {
+    const res = await fetch(`${KALSHI_API}/trade-api/v2/exchange/status`);
+    const serverTime = res.headers.get('date');
+    if (serverTime) {
+      const serverMs = new Date(serverTime).getTime();
+      const localMs = Date.now();
+      clockOffset = Math.floor((serverMs - localMs) / 1000);
+      lastCalibration = Date.now();
+      console.log(`Clock calibrated: offset = ${clockOffset}s`);
+    }
+  } catch (e) {
+    console.log('Clock calibration failed, using offset 0');
+    clockOffset = 0;
+  }
+}
 
 function createSignature(timestamp: string, method: string, path: string): string {
   const pathWithoutQuery = path.split('?')[0];
@@ -26,7 +49,7 @@ function createSignature(timestamp: string, method: string, path: string): strin
 }
 
 function getHeaders(method: string, path: string): Record<string, string> {
-  const timestamp = String(Math.floor((Date.now() / 1000 + CLOCK_OFFSET) * 1000));
+  const timestamp = String(Math.floor((Date.now() / 1000 + clockOffset) * 1000));
   const signature = createSignature(timestamp, method, path);
   
   return {
@@ -38,6 +61,8 @@ function getHeaders(method: string, path: string): Record<string, string> {
 }
 
 async function kalshiRequest(method: string, path: string, body?: any) {
+  await calibrateClock();
+  
   const url = `${KALSHI_API}${path}`;
   const headers = getHeaders(method, path);
   
