@@ -33,7 +33,8 @@ const navItems = [
   { href: "/chat", icon: MessageSquare, label: "Chat" },
   { href: "/tasks", icon: CheckSquare, label: "Tasks" },
   { href: "/projects", icon: FolderKanban, label: "Projects" },
-  { href: "/investing", icon: TrendingUp, label: "Investing" },
+  { href: "/predictions", icon: TrendingUp, label: "Predictions" },
+  { href: "/investing", icon: Activity, label: "Investing" },
   { href: "/calls", icon: Phone, label: "Calls" },
   { href: "/memory", icon: Brain, label: "Memory" },
 ];
