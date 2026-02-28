@@ -6,82 +6,100 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  getHotEvents,
-  getRecentTrades,
-  parseOutcomePrices,
-  parseOutcomes,
+  getMarkets,
+  getMarketsBySeries,
+  getSeries,
+  formatPrice,
   formatVolume,
-  formatProb,
-  PolymarketEvent,
-  PolymarketTrade,
-} from "@/lib/polymarket";
+  getMidPrice,
+  KalshiMarket,
+} from "@/lib/kalshi";
 import {
   Flame,
   TrendingUp,
-  TrendingDown,
   RefreshCw,
   ExternalLink,
   Search,
-  ArrowUpRight,
-  ArrowDownRight,
   Wallet,
+  DollarSign,
+  BarChart3,
   Clock,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
 
-type TabId = "hot" | "trades" | "portfolio";
+type TabId = "hot" | "browse" | "portfolio";
+
+const INTERESTING_SERIES = [
+  { ticker: 'KXOAISOCIAL', name: 'OpenAI Social App' },
+  { ticker: 'KXASL3', name: 'Anthropic ASL3' },
+  { ticker: 'KXBUYBTC', name: 'US Buys Bitcoin' },
+  { ticker: 'KXDOTPLOT', name: 'Fed Dot Plot' },
+  { ticker: 'KXTRAVISKELCEWEDDING', name: 'Travis Kelce Wedding' },
+];
 
 export default function PredictionsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("hot");
-  const [events, setEvents] = useState<PolymarketEvent[]>([]);
-  const [trades, setTrades] = useState<PolymarketTrade[]>([]);
+  const [markets, setMarkets] = useState<KalshiMarket[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [walletAddress, setWalletAddress] = useState("");
+  const [balance, setBalance] = useState<number | null>(null);
+  const [portfolioValue, setPortfolioValue] = useState<number | null>(null);
+  const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
 
-  const fetchHotMarkets = useCallback(async () => {
+  const fetchBalance = useCallback(async () => {
+    try {
+      const res = await fetch('/api/kalshi/balance');
+      const data = await res.json();
+      if (data.balance !== undefined) {
+        setBalance(data.balance / 100); // Convert cents to dollars
+        setPortfolioValue(data.portfolio_value / 100);
+      }
+    } catch (err) {
+      console.error("Failed to fetch balance:", err);
+    }
+  }, []);
+
+  const fetchMarkets = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getHotEvents(30);
-      setEvents(data);
+      let data: KalshiMarket[];
+      if (selectedSeries) {
+        data = await getMarketsBySeries(selectedSeries);
+      } else {
+        data = await getMarkets(50);
+      }
+      // Filter out multivariate combo markets and sort by volume
+      const filtered = data
+        .filter(m => !m.ticker.includes('KXMVE'))
+        .sort((a, b) => (b.volume || 0) - (a.volume || 0));
+      setMarkets(filtered);
       setLastUpdate(new Date());
     } catch (err) {
-      console.error("Failed to fetch events:", err);
+      console.error("Failed to fetch markets:", err);
     }
     setLoading(false);
-  }, []);
-
-  const fetchTrades = useCallback(async () => {
-    try {
-      const data = await getRecentTrades(100);
-      setTrades(data);
-    } catch (err) {
-      console.error("Failed to fetch trades:", err);
-    }
-  }, []);
+  }, [selectedSeries]);
 
   useEffect(() => {
-    fetchHotMarkets();
-    fetchTrades();
+    fetchMarkets();
+    fetchBalance();
     const interval = setInterval(() => {
-      fetchHotMarkets();
-      fetchTrades();
+      fetchMarkets();
+      fetchBalance();
     }, 30000);
     return () => clearInterval(interval);
-  }, [fetchHotMarkets, fetchTrades]);
+  }, [fetchMarkets, fetchBalance]);
 
-  const filteredEvents = searchQuery
-    ? events.filter((e) =>
-        e.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredMarkets = searchQuery
+    ? markets.filter((m) =>
+        m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.ticker.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : events;
-
-  const whaleTrades = trades.filter((t) => t.size * t.price >= 1000);
+    : markets;
 
   const tabs = [
-    { id: "hot" as TabId, label: "Hot Markets", icon: Flame, count: events.length },
-    { id: "trades" as TabId, label: "Live Trades", icon: TrendingUp, count: whaleTrades.length },
+    { id: "hot" as TabId, label: "Hot Markets", icon: Flame },
+    { id: "browse" as TabId, label: "Browse", icon: Search },
     { id: "portfolio" as TabId, label: "Portfolio", icon: Wallet },
   ];
 
@@ -89,15 +107,35 @@ export default function PredictionsPage() {
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6 animate-fade-in">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold mb-1 flex items-center gap-2">
               🎰 Predictions
             </h1>
             <p className="text-muted-foreground text-sm">
-              Polymarket tracking & analysis
+              Kalshi prediction markets
             </p>
           </div>
+          
+          {/* Balance Card */}
+          {balance !== null && (
+            <Card className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/20">
+              <CardContent className="p-4 flex items-center gap-4">
+                <DollarSign className="w-8 h-8 text-green-500" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Balance</p>
+                  <p className="text-2xl font-bold text-green-500">${balance.toFixed(2)}</p>
+                </div>
+                {portfolioValue !== null && portfolioValue > 0 && (
+                  <div className="border-l border-border pl-4">
+                    <p className="text-xs text-muted-foreground">Portfolio</p>
+                    <p className="text-lg font-semibold">${portfolioValue.toFixed(2)}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+          
           <div className="flex items-center gap-2">
             {lastUpdate && (
               <span className="text-xs text-muted-foreground">
@@ -107,15 +145,10 @@ export default function PredictionsPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                fetchHotMarkets();
-                fetchTrades();
-              }}
+              onClick={() => { fetchMarkets(); fetchBalance(); }}
               disabled={loading}
             >
-              <RefreshCw
-                className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
-              />
+              <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
           </div>
@@ -136,11 +169,6 @@ export default function PredictionsPage() {
             >
               <Icon className="w-4 h-4" />
               {tab.label}
-              {tab.count !== undefined && (
-                <Badge variant="secondary" className="ml-1">
-                  {tab.count}
-                </Badge>
-              )}
             </Button>
           );
         })}
@@ -149,6 +177,27 @@ export default function PredictionsPage() {
       {/* Hot Markets Tab */}
       {activeTab === "hot" && (
         <div className="space-y-4">
+          {/* Quick Series Filters */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={selectedSeries === null ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedSeries(null)}
+            >
+              All Markets
+            </Button>
+            {INTERESTING_SERIES.map((s) => (
+              <Button
+                key={s.ticker}
+                variant={selectedSeries === s.ticker ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedSeries(s.ticker)}
+              >
+                {s.name}
+              </Button>
+            ))}
+          </div>
+
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -161,38 +210,31 @@ export default function PredictionsPage() {
           </div>
 
           {/* Markets List */}
-          {loading && events.length === 0 ? (
+          {loading && markets.length === 0 ? (
             <div className="flex items-center justify-center py-20">
               <RefreshCw className="animate-spin text-primary" size={32} />
             </div>
           ) : (
             <div className="space-y-3">
-              {filteredEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
+              {filteredMarkets.slice(0, 30).map((market) => (
+                <MarketCard key={market.ticker} market={market} />
               ))}
+              {filteredMarkets.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                  No markets found
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* Live Trades Tab */}
-      {activeTab === "trades" && (
+      {/* Browse Tab */}
+      {activeTab === "browse" && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Badge variant="outline" className="gap-1">
-              <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-              🐋 Whale trades ($1K+)
-            </Badge>
-            <span className="text-xs text-muted-foreground">
-              {whaleTrades.length} large trades
-            </span>
-          </div>
-
-          <div className="space-y-2">
-            {trades.slice(0, 50).map((trade, idx) => (
-              <TradeCard key={`${trade.transactionHash}-${idx}`} trade={trade} />
-            ))}
-          </div>
+          <p className="text-muted-foreground">
+            Browse markets by category coming soon...
+          </p>
         </div>
       )}
 
@@ -201,198 +243,100 @@ export default function PredictionsPage() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Track Your Portfolio</CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Wallet className="w-5 h-5" />
+                Your Portfolio
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Enter your Polymarket wallet address (0x...)"
-                  value={walletAddress}
-                  onChange={(e) => setWalletAddress(e.target.value)}
-                />
-                <Button disabled={!walletAddress || walletAddress.length < 42}>
-                  Track
-                </Button>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground">Cash Balance</p>
+                  <p className="text-3xl font-bold text-green-500">
+                    ${balance?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground">Portfolio Value</p>
+                  <p className="text-3xl font-bold">
+                    ${portfolioValue?.toFixed(2) || '0.00'}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Enter your wallet address to see your positions and P&L
-              </p>
+              
+              <div className="text-center py-8 text-muted-foreground">
+                <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                <p>No open positions</p>
+                <p className="text-sm mt-2">Start trading to see your positions here</p>
+              </div>
             </CardContent>
           </Card>
-
-          {!walletAddress && (
-            <div className="text-center py-12">
-              <Wallet className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
-              <p className="text-muted-foreground">
-                Enter your wallet address above to track positions
-              </p>
-            </div>
-          )}
         </div>
       )}
     </div>
   );
 }
 
-function EventCard({ event }: { event: PolymarketEvent }) {
-  const [expanded, setExpanded] = useState(false);
-  const topMarket = event.markets?.[0];
-  const prices = parseOutcomePrices(topMarket?.outcomePrices || null);
-  const outcomes = parseOutcomes(topMarket?.outcomes || null);
-  const yesPrice = prices[0];
+function MarketCard({ market }: { market: KalshiMarket }) {
+  const midPrice = getMidPrice(market);
+  const spread = market.yes_ask && market.yes_bid ? market.yes_ask - market.yes_bid : 0;
 
   return (
-    <Card
-      className="cursor-pointer hover:border-primary/50 transition-colors"
-      onClick={() => setExpanded(!expanded)}
-    >
+    <Card className="hover:border-primary/50 transition-colors">
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
-          {event.icon && (
-            <img
-              src={event.icon}
-              alt=""
-              className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-            />
-          )}
-
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold mb-2 line-clamp-2">{event.title}</h3>
+            <h3 className="font-semibold mb-1 line-clamp-2">{market.title}</h3>
+            <p className="text-xs text-muted-foreground mb-2">
+              {market.ticker}
+            </p>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <div className="flex items-center gap-1">
-                <span className="text-muted-foreground">24h:</span>
-                <span className="text-yellow-500 font-mono font-medium">
-                  {formatVolume(event.volume24hr)}
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              {market.volume > 0 && (
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Vol:</span>
+                  <span className="text-yellow-500 font-mono">
+                    {formatVolume(market.volume)}
+                  </span>
+                </div>
+              )}
+              {spread > 0 && (
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Spread:</span>
+                  <span className="font-mono">{spread}¢</span>
+                </div>
+              )}
+              <Badge variant="outline" className="text-xs">
+                {market.status}
+              </Badge>
+            </div>
+          </div>
+
+          <div className="text-right flex-shrink-0">
+            <div className="space-y-1">
+              <div className="flex items-center justify-end gap-2">
+                <span className="text-xs text-green-500">YES</span>
+                <span className={`font-mono font-bold text-xl ${
+                  midPrice > 50 ? "text-green-500" : "text-muted-foreground"
+                }`}>
+                  {midPrice}¢
                 </span>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-muted-foreground">Total:</span>
-                <span className="font-mono">{formatVolume(event.volume)}</span>
+              <div className="text-xs text-muted-foreground">
+                {market.yes_bid}-{market.yes_ask}¢
               </div>
-              {event.markets && event.markets.length > 1 && (
-                <Badge variant="outline">{event.markets.length} markets</Badge>
-              )}
             </div>
           </div>
 
-          <div className="text-right flex-shrink-0">
-            {topMarket && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-end gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    {outcomes[0]}
-                  </span>
-                  <span
-                    className={`font-mono font-bold text-lg ${
-                      yesPrice > 0.5 ? "text-green-500" : "text-muted-foreground"
-                    }`}
-                  >
-                    {formatProb(yesPrice)}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Expanded Markets */}
-        {expanded && event.markets && event.markets.length > 1 && (
-          <div className="mt-4 pt-4 border-t border-border space-y-2">
-            {event.markets.slice(0, 10).map((market) => {
-              const mPrices = parseOutcomePrices(market.outcomePrices);
-              return (
-                <div
-                  key={market.id}
-                  className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg"
-                >
-                  <span className="text-sm truncate flex-1 mr-4">
-                    {market.question}
-                  </span>
-                  <span
-                    className={`font-mono font-medium ${
-                      mPrices[0] > 0.5 ? "text-green-500" : "text-muted-foreground"
-                    }`}
-                  >
-                    {formatProb(mPrices[0])}
-                  </span>
-                </div>
-              );
-            })}
-            <a
-              href={`https://polymarket.com/event/${event.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 mt-2 py-2 text-primary hover:underline text-sm"
-              onClick={(e) => e.stopPropagation()}
-            >
-              Open on Polymarket
-              <ExternalLink size={14} />
-            </a>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function TradeCard({ trade }: { trade: PolymarketTrade }) {
-  const isBuy = trade.side === "BUY";
-  const value = trade.size * trade.price;
-  const isWhale = value >= 1000;
-
-  return (
-    <Card className={isWhale ? "border-l-4 border-l-yellow-500" : ""}>
-      <CardContent className="p-3">
-        <div className="flex items-center gap-3">
-          <div
-            className={`flex items-center justify-center w-8 h-8 rounded-lg ${
-              isBuy ? "bg-green-500/20" : "bg-red-500/20"
-            }`}
+          <a
+            href={`https://kalshi.com/markets/${market.ticker}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-primary transition p-2"
+            onClick={(e) => e.stopPropagation()}
           >
-            {isBuy ? (
-              <ArrowUpRight className="text-green-500" size={16} />
-            ) : (
-              <ArrowDownRight className="text-red-500" size={16} />
-            )}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Badge
-                variant="outline"
-                className={
-                  isBuy
-                    ? "border-green-500/50 text-green-500"
-                    : "border-red-500/50 text-red-500"
-                }
-              >
-                {trade.side}
-              </Badge>
-              <span className="text-sm font-medium">{trade.outcome}</span>
-              <span className="text-muted-foreground">@</span>
-              <span className="text-sm font-mono text-primary">
-                {(trade.price * 100).toFixed(1)}¢
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground truncate">
-              {trade.title}
-            </p>
-          </div>
-
-          <div className="text-right flex-shrink-0">
-            <div
-              className={`font-mono font-bold ${
-                isWhale ? "text-yellow-500" : ""
-              }`}
-            >
-              ${value.toFixed(2)}
-            </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock size={10} />
-              {formatDistanceToNow(trade.timestamp * 1000, { addSuffix: true })}
-            </div>
-          </div>
+            <ExternalLink size={16} />
+          </a>
         </div>
       </CardContent>
     </Card>
