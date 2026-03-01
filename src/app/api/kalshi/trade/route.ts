@@ -14,11 +14,7 @@ const supabase = createClient(
 // === SAFEGUARDS ===
 const COOLDOWN_MS = 60000; // 60 seconds between ANY trades
 const MAX_POSITION_PCT = 0.02; // 2% of balance max per trade
-const RECENT_TRADES_WINDOW_MS = 300000; // 5 minute dedup window
-
-// In-memory tracking (resets on deploy, but DB is source of truth)
-let lastTradeTime = 0;
-const recentTickers: Map<string, number> = new Map();
+const DEDUP_WINDOW_MS = 300000; // 5 minute dedup window for same ticker
 
 // Auto-calibrate clock offset
 let clockOffset = 0;
@@ -86,9 +82,28 @@ async function getBalance(): Promise<number> {
   }
 }
 
-async function checkRecentTrade(ticker: string): Promise<boolean> {
-  // Check database for recent trades on this ticker
-  const cutoff = new Date(Date.now() - RECENT_TRADES_WINDOW_MS).toISOString();
+async function checkCooldown(): Promise<{ blocked: boolean; waitSec?: number }> {
+  // Check database for any trade in last 60 seconds
+  const cutoff = new Date(Date.now() - COOLDOWN_MS).toISOString();
+  const { data } = await supabase
+    .from('kalshi_trades')
+    .select('created_at')
+    .eq('status', 'submitted')
+    .gte('created_at', cutoff)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  
+  if (data && data.length > 0) {
+    const lastTradeTime = new Date(data[0].created_at).getTime();
+    const waitSec = Math.ceil((COOLDOWN_MS - (Date.now() - lastTradeTime)) / 1000);
+    return { blocked: true, waitSec };
+  }
+  return { blocked: false };
+}
+
+async function checkDuplicate(ticker: string): Promise<boolean> {
+  // Check database for recent trades on this specific ticker
+  const cutoff = new Date(Date.now() - DEDUP_WINDOW_MS).toISOString();
   const { data } = await supabase
     .from('kalshi_trades')
     .select('id')
@@ -112,22 +127,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: ticker, side, count' }, { status: 400 });
     }
 
-    // === SAFEGUARD 1: Global cooldown ===
+    // === SAFEGUARD 1: Global cooldown (DB-based) ===
     if (!skipSafeguards) {
-      const now = Date.now();
-      if (now - lastTradeTime < COOLDOWN_MS) {
-        const waitSec = Math.ceil((COOLDOWN_MS - (now - lastTradeTime)) / 1000);
+      const cooldown = await checkCooldown();
+      if (cooldown.blocked) {
         return NextResponse.json({ 
-          error: `Cooldown active. Wait ${waitSec}s before next trade.`,
-          blocked: 'cooldown'
+          error: `Cooldown active. Wait ${cooldown.waitSec}s before next trade.`,
+          blocked: 'cooldown',
+          waitSec: cooldown.waitSec
         }, { status: 429 });
       }
     }
 
-    // === SAFEGUARD 2: Deduplication ===
+    // === SAFEGUARD 2: Deduplication (DB-based) ===
     if (!skipSafeguards) {
-      const alreadyTraded = await checkRecentTrade(ticker);
-      if (alreadyTraded) {
+      const isDuplicate = await checkDuplicate(ticker);
+      if (isDuplicate) {
         return NextResponse.json({ 
           error: `Already traded ${ticker} in last 5 minutes. Skipping duplicate.`,
           blocked: 'duplicate'
@@ -155,9 +170,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Update cooldown timestamp BEFORE making trade
-    lastTradeTime = Date.now();
-    
     const path = '/trade-api/v2/portfolio/orders';
     const orderData: any = {
       ticker,
