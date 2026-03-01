@@ -11,6 +11,15 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// === SAFEGUARDS ===
+const COOLDOWN_MS = 60000; // 60 seconds between ANY trades
+const MAX_POSITION_PCT = 0.02; // 2% of balance max per trade
+const RECENT_TRADES_WINDOW_MS = 300000; // 5 minute dedup window
+
+// In-memory tracking (resets on deploy, but DB is source of truth)
+let lastTradeTime = 0;
+const recentTickers: Map<string, number> = new Map();
+
 // Auto-calibrate clock offset
 let clockOffset = 0;
 let lastCalibration = 0;
@@ -63,23 +72,97 @@ function getHeaders(method: string, path: string): Record<string, string> {
   };
 }
 
-// POST: Execute a trade
+async function getBalance(): Promise<number> {
+  try {
+    await calibrateClock();
+    const path = '/trade-api/v2/portfolio/balance';
+    const headers = getHeaders('GET', path);
+    const res = await fetch(`${KALSHI_API}${path}`, { headers });
+    const data = await res.json();
+    // Balance is in cents
+    return (data.balance || 0) / 100;
+  } catch (e) {
+    return 0;
+  }
+}
+
+async function checkRecentTrade(ticker: string): Promise<boolean> {
+  // Check database for recent trades on this ticker
+  const cutoff = new Date(Date.now() - RECENT_TRADES_WINDOW_MS).toISOString();
+  const { data } = await supabase
+    .from('kalshi_trades')
+    .select('id')
+    .eq('ticker', ticker)
+    .eq('status', 'submitted')
+    .gte('created_at', cutoff)
+    .limit(1);
+  
+  return (data && data.length > 0);
+}
+
+// POST: Execute a trade (with safeguards)
 export async function POST(request: NextRequest) {
   try {
     await calibrateClock();
     
     const body = await request.json();
-    const { ticker, side, count, price, type = 'limit', reason, btcPrice } = body;
+    const { ticker, side, count, price, type = 'limit', reason, btcPrice, skipSafeguards = false } = body;
     
     if (!ticker || !side || !count) {
       return NextResponse.json({ error: 'Missing required fields: ticker, side, count' }, { status: 400 });
     }
+
+    // === SAFEGUARD 1: Global cooldown ===
+    if (!skipSafeguards) {
+      const now = Date.now();
+      if (now - lastTradeTime < COOLDOWN_MS) {
+        const waitSec = Math.ceil((COOLDOWN_MS - (now - lastTradeTime)) / 1000);
+        return NextResponse.json({ 
+          error: `Cooldown active. Wait ${waitSec}s before next trade.`,
+          blocked: 'cooldown'
+        }, { status: 429 });
+      }
+    }
+
+    // === SAFEGUARD 2: Deduplication ===
+    if (!skipSafeguards) {
+      const alreadyTraded = await checkRecentTrade(ticker);
+      if (alreadyTraded) {
+        return NextResponse.json({ 
+          error: `Already traded ${ticker} in last 5 minutes. Skipping duplicate.`,
+          blocked: 'duplicate'
+        }, { status: 429 });
+      }
+    }
+
+    // === SAFEGUARD 3: Position sizing ===
+    if (!skipSafeguards) {
+      const balance = await getBalance();
+      const tradeCost = (count * (price || 50)) / 100; // Estimate in dollars
+      const maxTrade = balance * MAX_POSITION_PCT;
+      
+      if (tradeCost > maxTrade && balance > 0) {
+        // Adjust count to fit within 2%
+        const adjustedCount = Math.floor((maxTrade * 100) / (price || 50));
+        if (adjustedCount < 1) {
+          return NextResponse.json({ 
+            error: `Trade too large. Balance: $${balance.toFixed(2)}, Max: $${maxTrade.toFixed(2)}`,
+            blocked: 'position_size'
+          }, { status: 400 });
+        }
+        // Use adjusted count
+        body.count = adjustedCount;
+      }
+    }
+
+    // Update cooldown timestamp BEFORE making trade
+    lastTradeTime = Date.now();
     
     const path = '/trade-api/v2/portfolio/orders';
     const orderData: any = {
       ticker,
       side,
-      count,
+      count: body.count, // May have been adjusted
       type,
       action: 'buy',
     };
@@ -101,7 +184,7 @@ export async function POST(request: NextRequest) {
     const tradeLog = {
       ticker,
       side,
-      count,
+      count: body.count,
       price,
       type,
       reason,
@@ -118,6 +201,11 @@ export async function POST(request: NextRequest) {
       order: result.order,
       error: result.error,
       logged: true,
+      safeguards: {
+        cooldownMs: COOLDOWN_MS,
+        maxPositionPct: MAX_POSITION_PCT,
+        adjustedCount: body.count !== count ? body.count : undefined,
+      }
     });
   } catch (error: any) {
     console.error('Trade error:', error);
