@@ -112,7 +112,7 @@ async function checkDuplicate(ticker: string): Promise<boolean> {
     .gte('created_at', cutoff)
     .limit(1);
   
-  return (data && data.length > 0);
+  return !!(data && data.length > 0);
 }
 
 // POST: Execute a trade (with safeguards)
