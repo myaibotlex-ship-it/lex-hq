@@ -29,6 +29,7 @@ import {
 const navItems = [
   { href: "/", icon: LayoutDashboard, label: "Mission Control" },
   { href: "/agents", icon: Bot, label: "Agents" },
+  { href: "/learning", icon: Brain, label: "Learning" },
   { href: "/logs", icon: ScrollText, label: "Activity Logs" },
   { href: "/upgrades", icon: Rocket, label: "Upgrades" },
   { href: "/chat", icon: MessageSquare, label: "Chat" },
@@ -38,7 +39,7 @@ const navItems = [
   { href: "/arbitrage", icon: Zap, label: "Latency Arb" },
   { href: "/investing", icon: Activity, label: "Investing" },
   { href: "/calls", icon: Phone, label: "Calls" },
-  { href: "/memory", icon: Brain, label: "Memory" },
+  { href: "/memory", icon: MessageSquare, label: "Memory" },
 ];
 
 export function Sidebar() {
