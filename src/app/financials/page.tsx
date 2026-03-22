@@ -17,6 +17,10 @@ import {
   PiggyBank,
   Receipt,
   Wallet,
+  Upload,
+  FileText,
+  CheckCircle2,
+  Loader2,
 } from "lucide-react";
 
 interface FinancialRecord {
@@ -537,6 +541,10 @@ export default function FinancialsPage() {
             <Building2 className="w-4 h-4" />
             CLD Consulting
           </TabsTrigger>
+          <TabsTrigger value="upload" className="flex items-center gap-2">
+            <Upload className="w-4 h-4" />
+            Upload Reports
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="calibrate">
@@ -554,7 +562,201 @@ export default function FinancialsPage() {
             onUpdate={fetchRecords}
           />
         </TabsContent>
+
+        <TabsContent value="upload">
+          <ReportUploader />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function ReportUploader() {
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState("Calibrate HCM");
+  const [selectedReportType, setSelectedReportType] = useState("pl");
+  const [dragActive, setDragActive] = useState(false);
+
+  const reportTypes = [
+    { value: "pl", label: "Profit & Loss" },
+    { value: "balance_sheet", label: "Balance Sheet" },
+    { value: "cash_flow", label: "Cash Flow Statement" },
+    { value: "ar_aging", label: "AR Aging" },
+    { value: "ap_aging", label: "AP Aging" },
+    { value: "general_ledger", label: "General Ledger" },
+    { value: "other", label: "Other" },
+  ];
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      await uploadFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      await uploadFile(e.target.files[0]);
+    }
+  };
+
+  const uploadFile = async (file: File) => {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("company", selectedCompany);
+      formData.append("reportType", selectedReportType);
+
+      const response = await fetch("/api/financials/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setUploadedFiles((prev) => [...prev, result.message]);
+      } else {
+        console.error("Upload failed:", result.error);
+        alert("Upload failed: " + result.error);
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="w-5 h-5 text-primary" />
+            Upload Financial Reports
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Upload QuickBooks exports, P&L statements, or other financial reports.
+            Supported formats: CSV, PDF, Excel (.xlsx)
+          </p>
+
+          {/* Company & Report Type Selection */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Company</label>
+              <select
+                value={selectedCompany}
+                onChange={(e) => setSelectedCompany(e.target.value)}
+                className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm"
+              >
+                <option value="Calibrate HCM">Calibrate HCM</option>
+                <option value="CLD Consulting">CLD Consulting</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Report Type</label>
+              <select
+                value={selectedReportType}
+                onChange={(e) => setSelectedReportType(e.target.value)}
+                className="w-full px-3 py-2 bg-secondary border border-border rounded-lg text-sm"
+              >
+                {reportTypes.map((rt) => (
+                  <option key={rt.value} value={rt.value}>
+                    {rt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Drop Zone */}
+          <div
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+              dragActive
+                ? "border-primary bg-primary/10"
+                : "border-border hover:border-primary/50"
+            }`}
+          >
+            {uploading ? (
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Uploading...</p>
+              </div>
+            ) : (
+              <>
+                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-sm mb-2">
+                  Drag & drop your report here, or{" "}
+                  <label className="text-primary cursor-pointer hover:underline">
+                    browse
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".csv,.pdf,.xlsx,.xls"
+                      onChange={handleFileSelect}
+                    />
+                  </label>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  CSV, PDF, or Excel files up to 10MB
+                </p>
+              </>
+            )}
+          </div>
+
+          {/* Uploaded Files */}
+          {uploadedFiles.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Uploaded this session:</h4>
+              {uploadedFiles.map((msg, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 text-sm text-green-400 bg-green-500/10 px-3 py-2 rounded-lg"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  {msg}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Instructions */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="text-sm">How to export from QuickBooks</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground space-y-2">
+          <p>1. In QuickBooks, go to <strong>Reports</strong></p>
+          <p>2. Select the report you want (e.g., Profit & Loss)</p>
+          <p>3. Set the date range</p>
+          <p>4. Click <strong>Export</strong> → <strong>Export to Excel</strong> or <strong>Export to PDF</strong></p>
+          <p>5. Upload the file here</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
