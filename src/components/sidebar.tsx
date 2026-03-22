@@ -24,11 +24,15 @@ import {
   Activity,
   TrendingUp,
   Zap,
+  Wallet,
+  Users2,
 } from "lucide-react";
 
 const navItems = [
   { href: "/", icon: LayoutDashboard, label: "Mission Control" },
   { href: "/agents", icon: Bot, label: "Agents" },
+  { href: "/council", icon: Users2, label: "R&D Council" },
+  { href: "/financials", icon: Wallet, label: "Financials" },
   { href: "/learning", icon: Brain, label: "Learning" },
   { href: "/logs", icon: ScrollText, label: "Activity Logs" },
   { href: "/upgrades", icon: Rocket, label: "Upgrades" },

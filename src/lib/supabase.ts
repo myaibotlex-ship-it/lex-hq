@@ -175,3 +175,33 @@ export interface Upgrade {
   // Joined field
   source?: ResearchSource;
 }
+
+// Council Meeting interfaces
+export interface CouncilParticipant {
+  name: string;
+  model: string;
+  role: string;
+  emoji: string;
+}
+
+export interface CouncilDialogue {
+  speaker: string;
+  model: string;
+  content: string;
+  timestamp: string;
+  type: 'idea' | 'debate' | 'support' | 'challenge' | 'synthesis';
+}
+
+export interface CouncilMeeting {
+  id: string;
+  meeting_time: string;
+  agenda_topic: string | null;
+  initiator_model: string;
+  participants: CouncilParticipant[];
+  dialogue: CouncilDialogue[];
+  recommendations: string[];
+  action_items: string[];
+  summary: string | null;
+  status: 'in_progress' | 'completed' | 'failed';
+  created_at: string;
+}
