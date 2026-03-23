@@ -21,7 +21,21 @@ import {
   FileText,
   CheckCircle2,
   Loader2,
+  BarChart3,
 } from "lucide-react";
+import {
+  RevenueQuarterlyChart,
+  RevenueByServiceChart,
+  MarginTrendChart,
+  CashFlowChart,
+  ConsultantHoursChart,
+  TeamStructureChart,
+  UtilizationMetrics,
+  ContractorRateCard,
+  PipelineFunnel,
+  WinRateAnalysis,
+  ContractorSpendBreakdown,
+} from "@/components/financials";
 
 interface FinancialRecord {
   id: string;
@@ -465,7 +479,7 @@ function CompanyFinancials({
 export default function FinancialsPage() {
   const [records, setRecords] = useState<FinancialRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("calibrate");
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   const fetchRecords = useCallback(async () => {
     try {
@@ -532,7 +546,11 @@ export default function FinancialsPage() {
 
       {/* Company Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
+        <TabsList className="mb-6 flex-wrap">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+            <BarChart3 className="w-4 h-4" />
+            Dashboard
+          </TabsTrigger>
           <TabsTrigger value="calibrate" className="flex items-center gap-2">
             <Building2 className="w-4 h-4" />
             Calibrate HCM
@@ -546,6 +564,46 @@ export default function FinancialsPage() {
             Upload Reports
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard">
+          <div className="space-y-6">
+            {/* Financial Overview */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <RevenueQuarterlyChart />
+              <RevenueByServiceChart />
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <MarginTrendChart />
+              <CashFlowChart />
+            </div>
+
+            {/* Team & Utilization */}
+            <h2 className="text-xl font-bold mt-8 mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Team & Utilization
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <ConsultantHoursChart />
+              <TeamStructureChart />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <UtilizationMetrics />
+              <ContractorRateCard />
+            </div>
+
+            {/* Pipeline & Spend */}
+            <h2 className="text-xl font-bold mt-8 mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              Pipeline & Contractor Spend
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <PipelineFunnel />
+              <WinRateAnalysis />
+            </div>
+            <ContractorSpendBreakdown />
+          </div>
+        </TabsContent>
 
         <TabsContent value="calibrate">
           <CompanyFinancials
