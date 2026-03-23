@@ -109,6 +109,23 @@ function formatCurrency(value: number): string {
   return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+// Troy ounce conversion factors for metals
+const GRAMS_PER_TROY_OZ = 31.1035;
+const KG_PER_TROY_OZ = 0.0311035;
+
+// Convert quantity to troy ounces for price calculation (metals only)
+function convertToTroyOz(quantity: number, unit: string): number {
+  switch (unit) {
+    case "g":
+      return quantity / GRAMS_PER_TROY_OZ;
+    case "kg":
+      return quantity / KG_PER_TROY_OZ;
+    case "oz":
+    default:
+      return quantity;
+  }
+}
+
 export default function InvestingPage() {
   const [activeTab, setActiveTab] = useState<TabId>("positions");
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
@@ -314,7 +331,17 @@ export default function InvestingPage() {
     (acc, position) => {
       const price = prices[position.symbol];
       const totalCost = position.quantity * position.cost_basis;
-      const currentValue = price ? position.quantity * price.price : totalCost;
+      
+      // For metals, convert quantity to troy oz if needed (API returns $/oz)
+      let currentValue = totalCost;
+      if (price) {
+        if (position.asset_type === "metal") {
+          const quantityInOz = convertToTroyOz(position.quantity, position.unit);
+          currentValue = quantityInOz * price.price;
+        } else {
+          currentValue = position.quantity * price.price;
+        }
+      }
       const pnl = currentValue - totalCost;
 
       return {
@@ -461,7 +488,17 @@ export default function InvestingPage() {
                 const price = prices[position.symbol];
                 const config = assetTypeConfig[position.asset_type];
                 const totalCost = position.quantity * position.cost_basis;
-                const currentValue = price ? position.quantity * price.price : totalCost;
+                
+                // For metals, convert quantity to troy oz if needed (API returns $/oz)
+                let currentValue = totalCost;
+                if (price) {
+                  if (position.asset_type === "metal") {
+                    const quantityInOz = convertToTroyOz(position.quantity, position.unit);
+                    currentValue = quantityInOz * price.price;
+                  } else {
+                    currentValue = position.quantity * price.price;
+                  }
+                }
                 const pnl = currentValue - totalCost;
                 const pnlPercent = totalCost > 0 ? (pnl / totalCost) * 100 : 0;
                 const isPositive = pnl >= 0;
