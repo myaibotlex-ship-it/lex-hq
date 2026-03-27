@@ -28,8 +28,8 @@ export async function POST(request: Request) {
     // For now, we'll just validate and return success
     // The password change would need to be done by updating the .env.local file
     
-    // Log the change request (in production, actually update the password)
-    console.log('Password change requested. New password:', newPassword);
+    // In production, implement actual password update here
+    // DO NOT log passwords
 
     return NextResponse.json({ 
       success: true,
