@@ -26,6 +26,8 @@ import {
   ScrollText,
   Rocket,
   TrendingUp,
+  Radio,
+  Target,
 } from "lucide-react";
 
 interface CommandPaletteProps {
@@ -47,6 +49,27 @@ const navigationCommands = [
     label: "Agents",
     shortcut: "G A",
     keywords: ["bot", "ai"],
+  },
+  {
+    href: "/agents/status",
+    icon: Bot,
+    label: "Agent Status",
+    shortcut: "G S",
+    keywords: ["status", "health", "mac studio"],
+  },
+  {
+    href: "/signals",
+    icon: Radio,
+    label: "Signal Feed",
+    shortcut: "G I",
+    keywords: ["signals", "ucaas", "ccaas", "prospects"],
+  },
+  {
+    href: "/prospects",
+    icon: Target,
+    label: "Prospects",
+    shortcut: "G R",
+    keywords: ["crm", "leads", "sales"],
   },
   {
     href: "/logs",
